@@ -31,7 +31,6 @@ export const hackathons = pgTable('hackathons', {
   banner: text('banner'),
   logo: text('logo'),
   theme: text('theme'),
-  prizes: json('prizes').default([]),
   rules: text('rules'),
   organizerId: varchar('organizer_id').notNull().references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -45,6 +44,7 @@ export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
   }),
   teams: many(teams),
   tracks: many(tracks),
+  prizes: many(prizes),
 }));
 
 export const teams = pgTable('teams', {
@@ -125,8 +125,37 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
   }),
 }));
 
+export const prizes = pgTable('prizes', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  value: integer('value'),
+  currency: varchar('currency', { length: 10 }).default('USD'),
+  rank: integer('rank'),
+  hackathonId: integer('hackathon_id').notNull().references(() => hackathons.id),
+  trackId: integer('track_id').references(() => tracks.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const prizesRelations = relations(prizes, ({ one }) => ({
+  hackathon: one(hackathons, {
+    fields: [prizes.hackathonId],
+    references: [hackathons.id],
+  }),
+  track: one(tracks, {
+    fields: [prizes.trackId],
+    references: [tracks.id],
+  }),
+}));
 
 export const hackathonStatusEnum = ['draft', 'published', 'active', 'completed', 'archived'] as const;
 export type HackathonStatus = typeof hackathonStatusEnum[number];
 
 export type Hackathon = typeof hackathons.$inferSelect;
+export type Team = typeof teams.$inferSelect;
+export type Track = typeof tracks.$inferSelect;
+export type User = typeof users.$inferSelect; 
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type Submission = typeof submissions.$inferSelect;
+export type Prize = typeof prizes.$inferSelect;
