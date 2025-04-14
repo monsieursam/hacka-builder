@@ -7,7 +7,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 const readPool = new Pool({
-  connectionString: process.env.DATABASE_READ_REPLICA_URL,
+  connectionString: process.env.DATABASE_URL,
 });
 
 // Create Drizzle ORM instance
