@@ -31,6 +31,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ClerkProvider } from '@clerk/nextjs';
 
 export default function DashboardLayout({
   children,
@@ -79,6 +80,12 @@ export default function DashboardLayout({
   };
 
   return (
+    <ClerkProvider>
+      <html lang="en">
+        <head>
+          <title>HackaBuilder - {getPageTitle()}</title>
+        </head>
+      <body>
     <SidebarProvider>
       <div className="flex h-screen w-full overflow-hidden">
         <Sidebar className="border-r flex flex-col h-full">
@@ -292,5 +299,8 @@ export default function DashboardLayout({
         </SidebarInset>
       </div>
     </SidebarProvider>
+    </body>
+    </html>
+    </ClerkProvider>
   );
 } 

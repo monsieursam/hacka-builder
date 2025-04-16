@@ -243,4 +243,28 @@ export async function getJudgeInvitationsForUser(userId: string) {
     console.error('Error getting judge invitations:', error);
     return [];
   }
+}
+
+/**
+ * Get all judges for a hackathon
+ */
+export async function getJudgesForHackathon(hackathonId: string) {
+  try {
+    if (!hackathonId) {
+      return [];
+    }
+    
+    const hackathonJudges = await db.query.judges.findMany({
+      where: eq(judges.hackathonId, hackathonId),
+      with: {
+        user: true,
+      },
+      orderBy: [desc(judges.createdAt)]
+    });
+    
+    return hackathonJudges;
+  } catch (error) {
+    console.error('Error getting judges for hackathon:', error);
+    return [];
+  }
 } 

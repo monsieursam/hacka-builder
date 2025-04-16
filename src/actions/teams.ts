@@ -1090,4 +1090,187 @@ export async function hasRequestedToJoinTeam(teamId: string) {
     console.error('Error checking join request status:', error);
     return { hasRequested: false };
   }
+}
+
+/**
+ * Generate a shareable team invitation link
+ */
+export async function generateTeamInviteLink(teamId: string, hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    // Get the team to verify it exists and check permissions
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    
+    // Verify the team belongs to the correct hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+    
+    // Check if the current user is authorized to invite (team owner or hackathon organizer)
+    const isAuthorized = await isTeamOwnerOrHackathonOrganizer(userId, teamId, hackathonId);
+    if (!isAuthorized) {
+      return { success: false, error: 'You are not authorized to generate invite links for this team' };
+    }
+    
+    // Generate invite link
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/team/${teamId}?hackathonId=${hackathonId}`;
+    
+    return { 
+      success: true,
+      inviteUrl
+    };
+  } catch (error) {
+    console.error('Error generating team invite link:', error);
+    return { success: false, error: 'Failed to generate team invite link' };
+  }
+}
+
+/**
+ * Join a team via invitation link
+ */
+export async function joinTeamViaInviteLink(teamId: string, hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    // Get the team to verify it exists
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    
+    // Verify the team belongs to the correct hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+    
+    // Check if user is already on a team for this hackathon
+    const existingTeam = await getUserTeamForHackathon(userId, hackathonId);
+    if (existingTeam) {
+      return { success: false, error: 'You are already part of a team for this hackathon' };
+    }
+    
+    // Check if the team is already at max capacity
+    const hackathon = await getHackathonById(hackathonId);
+    if (!hackathon) {
+      return { success: false, error: 'Hackathon not found' };
+    }
+    
+    const currentMembers = await db.query.teamMembers.findMany({
+      where: eq(teamMembers.teamId, teamId)
+    });
+    
+    if (currentMembers.length >= hackathon.maxTeamSize) {
+      return { success: false, error: 'Team is already at maximum capacity' };
+    }
+    
+    // Add user to the team
+    await db.insert(teamMembers).values({
+      teamId,
+      userId,
+      role: 'member'
+    });
+    
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard/my-team`);
+    revalidatePath(`/hackathons/${hackathonId}/teams/${teamId}`);
+    
+    return { 
+      success: true,
+      teamId,
+      hackathonId
+    };
+  } catch (error) {
+    console.error('Error joining team via invite link:', error);
+    return { success: false, error: 'Failed to join team' };
+  }
+}
+
+/**
+ * Remove a team member
+ */
+export async function removeTeamMember(teamId: string, memberUserId: string, hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    // Get the team to verify it exists and check permissions
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    
+    // Verify the team belongs to the correct hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+    
+    // Check if the current user is authorized to remove members (team owner or hackathon organizer)
+    const isAuthorized = await isTeamOwnerOrHackathonOrganizer(userId, teamId, hackathonId);
+    if (!isAuthorized) {
+      return { success: false, error: 'You are not authorized to remove members from this team' };
+    }
+    
+    // Prevent removing yourself if you're the owner
+    const memberToRemove = await db.query.teamMembers.findFirst({
+      where: and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, memberUserId)
+      )
+    });
+    
+    if (!memberToRemove) {
+      return { success: false, error: 'Team member not found' };
+    }
+    
+    if (memberToRemove.role === 'owner' && memberUserId === userId) {
+      return { success: false, error: 'Team owner cannot remove themselves. Please transfer ownership first.' };
+    }
+    
+    // Check if attempting to remove the team owner (only hackathon organizer can do this)
+    if (memberToRemove.role === 'owner') {
+      const hackathon = await getHackathonById(hackathonId);
+      if (!hackathon || hackathon.organizerId !== userId) {
+        return { success: false, error: 'Only the hackathon organizer can remove a team owner' };
+      }
+    }
+    
+    // Remove the team member
+    await db.delete(teamMembers)
+      .where(and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, memberUserId)
+      ));
+    
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard/my-team`);
+    revalidatePath(`/hackathons/${hackathonId}/teams/${teamId}`);
+    
+    return { 
+      success: true,
+      teamId,
+      hackathonId
+    };
+  } catch (error) {
+    console.error('Error removing team member:', error);
+    return { success: false, error: 'Failed to remove team member' };
+  }
 } 

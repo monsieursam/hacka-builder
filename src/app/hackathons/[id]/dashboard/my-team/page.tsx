@@ -8,6 +8,7 @@ import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
 import { getUserTeamWithMembersForHackathon } from '@/actions/teams';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { RemoveMemberButton } from './_components/RemoveMemberButton';
 
 export default async function MyTeamPage({ 
   params 
@@ -42,6 +43,11 @@ export default async function MyTeamPage({
   if (!userTeam) {
     redirect(`/hackathons/${hackathonId}/dashboard`);
   }
+
+  // Check if current user is the team owner
+  const isTeamOwner = userTeam.teamMembers?.some(
+    member => member.userId === userId && member.role === 'owner'
+  ) || false;
 
   return (
     <div className="py-8 px-6">
@@ -101,7 +107,7 @@ export default async function MyTeamPage({
             {userTeam.teamMembers && userTeam.teamMembers.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {userTeam.teamMembers.map(member => (
-                  <Card key={member.id} className="p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
+                  <Card key={member.id} className="p-4 flex items-start gap-3 hover:shadow-md transition-shadow relative">
                     <Avatar className="h-10 w-10">
                       <AvatarImage 
                         src={member.user?.image_url} 
@@ -122,6 +128,16 @@ export default async function MyTeamPage({
                       </p>
                       <p className="text-sm text-gray-500">{member.user?.email}</p>
                     </div>
+                    
+                    {(isTeamOwner || isOrganizer) && member.userId !== userId && (
+                      <RemoveMemberButton 
+                        teamId={userTeam.id}
+                        hackathonId={hackathonId}
+                        memberUserId={member.userId}
+                        isOwner={member.role === 'owner'}
+                        currentUserIsOwner={isTeamOwner}
+                      />
+                    )}
                   </Card>
                 ))}
               </div>
