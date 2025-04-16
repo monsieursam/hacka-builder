@@ -418,11 +418,6 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Hackathon Rules</h2>
-              <Link href={`/hackathons/${hackathon.id}/rules`}>
-                <Button>
-                  {hackathon.rules ? 'Edit Rules' : 'Create Rules'}
-                </Button>
-              </Link>
             </div>
             
             <Card className="p-6">
@@ -433,12 +428,9 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               ) : (
                 <div className="text-center py-12">
                   <h3 className="text-xl font-medium text-gray-600 mb-2">No rules defined yet</h3>
-                  <p className="text-gray-500 mb-6">
-                    Define the rules and guidelines for participants to follow during the hackathon.
+                  <p className="text-gray-500">
+                    The rules and guidelines for this hackathon haven't been defined yet.
                   </p>
-                  <Link href={`/hackathons/${hackathon.id}/rules`}>
-                    <Button>Create Rules</Button>
-                  </Link>
                 </div>
               )}
             </Card>

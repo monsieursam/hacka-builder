@@ -14,18 +14,20 @@ export default async function SubmitProjectPage({
   params,
   searchParams 
 }: { 
-  params: { id: string };
-  searchParams: { edit?: string }
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ edit?: string }>
 }) {
   const { userId } = await auth();
-  const isEdit = searchParams.edit === 'true';
+  const {id} = await params;
+  const {edit} = await searchParams;
+  const isEdit = edit === 'true';
   
   if (!userId) {
     redirect('/sign-in');
   }
   
   // Get hackathon info
-  const hackathon = await getHackathonByIdCached(params.id);
+  const hackathon = await getHackathonByIdCached(id);
   
   if (!hackathon) {
     notFound();
@@ -33,26 +35,26 @@ export default async function SubmitProjectPage({
   
   // Check if hackathon is accepting submissions
   if (hackathon.status !== 'active') {
-    redirect(`/hackathons/${params.id}/dashboard?error=Hackathon is not active for submissions`);
+    redirect(`/hackathons/${id}/dashboard?error=Hackathon is not active for submissions`);
   }
   
   // Get user's team
-  const team = await getUserTeamForHackathon(userId, params.id);
+  const team = await getUserTeamForHackathon(userId, id);
   
   if (!team) {
-    redirect(`/hackathons/${params.id}/teams/new?error=You must join or create a team before submitting`);
+    redirect(`/hackathons/${id}/teams/new?error=You must join or create a team before submitting`);
   }
   
   // Get tracks for this hackathon
-  const tracks = await getTracksByHackathonId(params.id);
+  const tracks = await getTracksByHackathonId(id);
   
   // If editing, get existing submission
   let existingSubmission: Submission | undefined;
   
   if (isEdit) {
-    const submissions = await getSubmissionsByHackathonId(params.id, team.id);
+    const submissions = await getSubmissionsByHackathonId(id, team.id);
     if (submissions.length === 0) {
-      redirect(`/hackathons/${params.id}/dashboard/submit`);
+      redirect(`/hackathons/${id}/dashboard/submit`);
     }
     existingSubmission = submissions[0] as Submission;
   }
@@ -101,7 +103,7 @@ export default async function SubmitProjectPage({
       
       {isEdit && existingSubmission ? (
         <SubmissionEditForm
-          hackathonId={params.id}
+          hackathonId={id}
           submissionId={existingSubmission.id}
           initialData={{
             projectName: existingSubmission.projectName,
@@ -116,7 +118,7 @@ export default async function SubmitProjectPage({
         />
       ) : (
         <SubmissionForm 
-          hackathonId={params.id} 
+          hackathonId={id} 
           teamId={team.id}
           teamName={team.name}
           tracks={tracks}

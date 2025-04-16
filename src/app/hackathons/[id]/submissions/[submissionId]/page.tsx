@@ -7,23 +7,26 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { db } from '@/db';
-import { submissions } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { submissions, judges } from '@/db/schema';
+import { eq, and } from 'drizzle-orm';
 import { getUserTeamForHackathon } from '@/actions/teams';
+import { getReviewByUserAndSubmission, getReviewsBySubmission } from '@/actions/reviews';
+import { SubmissionReview } from '@/app/hackathons/[id]/dashboard/_components/SubmissionReview';
 
 export default async function SubmissionDetailPage({ 
   params 
 }: { 
-  params: { id: string; submissionId: string } 
+  params: Promise<{ id: string; submissionId: string }> 
 }) {
   const { userId } = await auth();
+  const { submissionId, id } = await params;
   
   if (!userId) {
     redirect('/sign-in');
   }
   
   // Get hackathon info
-  const hackathon = await getHackathonByIdCached(params.id);
+  const hackathon = await getHackathonByIdCached(id);
   
   if (!hackathon) {
     notFound();
@@ -31,7 +34,7 @@ export default async function SubmissionDetailPage({
   
   // Get submission details
   const submission = await db.query.submissions.findFirst({
-    where: eq(submissions.id, params.submissionId),
+    where: eq(submissions.id, submissionId),
     with: {
       team: {
         with: {
@@ -51,9 +54,36 @@ export default async function SubmissionDetailPage({
   }
   
   // Get user's team for this hackathon to check if they are part of the team
-  const userTeam = await getUserTeamForHackathon(userId, params.id);
+  const userTeam = await getUserTeamForHackathon(userId, id);
   const isTeamMember = userTeam?.id === submission.teamId;
   const isOrganizer = userId === hackathon.organizerId;
+  
+  // Check if user is a judge for this hackathon
+  const isJudge = await db.query.judges.findFirst({
+    where: and(
+      eq(judges.hackathonId, id),
+      eq(judges.userId, userId),
+      eq(judges.isAccepted, true)
+    )
+  });
+  
+  // Determine if the user can leave a review
+  const canReview = isJudge || isOrganizer;
+  
+  // Get the user's review if it exists
+  const userReview = canReview ? await getReviewByUserAndSubmission({
+    userId,
+    submissionId
+  }) : null;
+  
+  // Get all reviews if user is organizer or team member
+  const allReviews = (isOrganizer || isTeamMember) ? 
+    await getReviewsBySubmission(submissionId) : [];
+  
+  // Determine user role for the review component
+  let userRole: 'judge' | 'team_member' | 'organizer' = 'team_member';
+  if (isOrganizer) userRole = 'organizer';
+  else if (isJudge) userRole = 'judge';
   
   const formattedDate = new Date(submission.submittedAt).toLocaleString('en-US', {
     year: 'numeric',
@@ -67,7 +97,7 @@ export default async function SubmissionDetailPage({
     <div className="container mx-auto py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Link href={`/hackathons/${params.id}/submissions`} className="text-blue-600 hover:underline mb-2 inline-block">
+          <Link href={`/hackathons/${id}/submissions`} className="text-blue-600 hover:underline mb-2 inline-block">
             ← Back to all submissions
           </Link>
           <h1 className="text-3xl font-bold">{submission.projectName}</h1>
@@ -87,7 +117,7 @@ export default async function SubmissionDetailPage({
         </div>
         
         {isTeamMember && (
-          <Link href={`/hackathons/${params.id}/submissions/${params.submissionId}/edit`}>
+          <Link href={`/hackathons/${id}/submissions/${submissionId}/edit`}>
             <Button>Edit Submission</Button>
           </Link>
         )}
@@ -151,6 +181,64 @@ export default async function SubmissionDetailPage({
               )}
             </div>
           </Card>
+          
+          {/* Reviews Section */}
+          {(isOrganizer || isTeamMember) && allReviews.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-xl font-bold mb-4">Reviews</h2>
+              <div className="space-y-4">
+                {allReviews.map((review) => (
+                  <Card key={review.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {[...Array(5)].map((_, i) => (
+                              <svg
+                                key={i}
+                                className={`w-4 h-4 ${
+                                  i < review.rating ? 'text-yellow-400' : 'text-gray-300'
+                                }`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <div className="text-sm font-medium">
+                            {review.user.first_name} {review.user.last_name}
+                          </div>
+                        </div>
+                        
+                        <p className="text-sm text-gray-500">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                          {review.updatedAt && review.updatedAt !== review.createdAt && 
+                            ` (updated ${new Date(review.updatedAt).toLocaleDateString()})`}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-gray-700">
+                      {review.content}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Review Form for judges/organizers */}
+          {canReview && (
+            <div className="mt-6">
+              <SubmissionReview 
+                submissionId={submissionId}
+                hackathonId={id}
+                userId={userId}
+                existingReview={userReview}
+                userRole={userRole}
+              />
+            </div>
+          )}
         </div>
         
         <div>

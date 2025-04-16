@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
-import { getTeamById, getTeamWithMembers } from '@/actions/teams';
+import { getTeamById, getTeamWithMembers, hasRequestedToJoinTeam } from '@/actions/teams';
 import { 
   Breadcrumb, 
   BreadcrumbItem, 
@@ -76,6 +76,9 @@ export default async function TeamDetailsPage({ params }: { params: { id: string
   // Check if the current user is a member of this team
   const isTeamMember = userId && team.teamMembers.some(member => member.userId === userId);
   
+  // Check if user has requested to join this team
+  const { hasRequested } = userId ? await hasRequestedToJoinTeam(teamId) : { hasRequested: false };
+  
   return (
     <main className="pb-12">
       {/* Breadcrumb */}
@@ -137,7 +140,19 @@ export default async function TeamDetailsPage({ params }: { params: { id: string
                   <Link href={`/hackathons/${hackathon.id}/teams/${team.id}/edit`}>Edit Team</Link>
                 </Button>
               ) : team.lookingForMembers ? (
-                <Button variant="secondary">Join Team</Button>
+                userId ? (
+                  hasRequested ? (
+                    <Button variant="secondary" disabled>Request Pending</Button>
+                  ) : (
+                    <Button variant="secondary" asChild>
+                      <Link href={`/hackathons/${hackathon.id}/teams/${team.id}/join`}>Request to Join</Link>
+                    </Button>
+                  )
+                ) : (
+                  <Button variant="secondary" asChild>
+                    <Link href={`/sign-in?redirect=/hackathons/${hackathon.id}/teams/${team.id}`}>Sign in to Join</Link>
+                  </Button>
+                )
               ) : null}
               <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
                 <Link href={`/hackathons/${hackathon.id}/teams`}>Back to Teams</Link>

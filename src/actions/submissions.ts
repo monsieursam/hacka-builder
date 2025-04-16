@@ -121,4 +121,57 @@ export async function updateSubmission(submissionId: string, data: Partial<Submi
     console.error('Failed to update submission:', error);
     throw new Error('Failed to update submission. ' + (error instanceof Error ? error.message : ''));
   }
+}
+
+/**
+ * Delete a submission
+ */
+export async function deleteSubmission(submissionId: string) {
+  // Check authentication
+  const { userId } = await auth();
+  if (!userId) {
+    redirect('/sign-in');
+  }
+
+  try {
+    // Get the submission with team info to check ownership
+    const existingSubmission = await db.query.submissions.findFirst({
+      where: eq(submissions.id, submissionId),
+      with: {
+        team: {
+          with: {
+            members: {
+              where: eq(teamMembers.userId, userId)
+            }
+          }
+        }
+      }
+    });
+
+    if (!existingSubmission) {
+      throw new Error('Submission not found');
+    }
+
+    // Verify the user is part of the team that made this submission
+    if (existingSubmission.team.members.length === 0) {
+      throw new Error('You must be part of the team to delete this submission');
+    }
+
+    // Get the hackathon ID for revalidation later
+    const hackathonId = existingSubmission.team.hackathonId;
+
+    // Delete the submission
+    await db.delete(submissions)
+      .where(eq(submissions.id, submissionId));
+
+    // Revalidate related paths
+    revalidatePath(`/hackathons/${hackathonId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${hackathonId}/submissions`);
+    
+    return { success: true, hackathonId };
+  } catch (error) {
+    console.error('Failed to delete submission:', error);
+    throw new Error('Failed to delete submission. ' + (error instanceof Error ? error.message : ''));
+  }
 } 

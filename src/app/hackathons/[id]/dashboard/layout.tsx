@@ -11,7 +11,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
 } from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
 
 export default function DashboardLayout({
   children,
@@ -30,9 +33,29 @@ export default function DashboardLayout({
     return pathname.startsWith(fullPath);
   };
 
+  // Determine the current section title based on the pathname
+  const getPageTitle = () => {
+    if (pathname === `/hackathons/${hackathonId}/dashboard`) {
+      return 'Dashboard Overview';
+    } else if (pathname.includes('/submissions')) {
+      return 'Submissions';
+    } else if (pathname.includes('/teams')) {
+      return 'Registered Teams';
+    } else if (pathname.includes('/prizes')) {
+      return 'Prizes';
+    } else if (pathname.includes('/my-team')) {
+      return 'My Team';
+    } else if (pathname.includes('/resources')) {
+      return 'Resources';
+    } else if (pathname.includes('/announcements')) {
+      return 'Announcements';
+    } else {
+      return 'Dashboard';
+    }
+  };
+
   return (
     <SidebarProvider>
-      <div className="flex">
         <Sidebar className="border-r">
           <SidebarHeader className="border-b px-4 py-3">
             <h2 className="text-lg font-semibold">Hackathon Dashboard</h2>
@@ -138,10 +161,16 @@ export default function DashboardLayout({
             </SidebarMenu>
           </SidebarContent>
         </Sidebar>
-        <div className="flex-1">
-          {children}
-        </div>
-      </div>
+        <SidebarInset className="flex-1 w-full">
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-6">
+            <SidebarTrigger />
+            <Separator orientation="vertical" className="h-4" />
+            <h2 className="text-2xl font-bold">{getPageTitle()}</h2>
+          </header>
+          <div className="flex-1">
+            {children}
+          </div>
+        </SidebarInset>
     </SidebarProvider>
   );
 } 

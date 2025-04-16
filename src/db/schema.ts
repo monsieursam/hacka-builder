@@ -69,6 +69,16 @@ export const teamInvitations = pgTable('team_invitations', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const teamJoinRequests = pgTable('team_join_requests', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').notNull().references(() => teams.id),
+  userId: varchar('user_id').notNull().references(() => users.id),
+  status: varchar('status', { length: 20 }).notNull().default('pending'),
+  message: text('message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 export const externalTeamMembers = pgTable('external_team_members', {
   id: uuid('id').primaryKey().defaultRandom(),
   teamId: uuid('team_id').notNull().references(() => teams.id),
@@ -127,11 +137,11 @@ export const judges = pgTable('judges', {
 export const reviews = pgTable('reviews', {
   id: uuid('id').primaryKey().defaultRandom(),
   submissionId: uuid('submission_id').notNull().references(() => submissions.id),
-  judgeId: uuid('judge_id').notNull().references(() => judges.id),
-  score: integer('score').notNull(),
-  feedback: text('feedback'),
+  userId: varchar('user_id').notNull().references(() => users.id),
+  rating: integer('rating').notNull(),
+  content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at'),
 });
 
 // Then define all relations
@@ -139,6 +149,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   hackathons: many(hackathons),
   teamMembers: many(teamMembers),
   judges: many(judges),
+  reviews: many(reviews),
 }));
 
 export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
@@ -160,6 +171,7 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
   members: many(teamMembers),
   submissions: many(submissions),
   invitations: many(teamInvitations),
+  joinRequests: many(teamJoinRequests),
   externalMembers: many(externalTeamMembers),
 }));
 
@@ -181,6 +193,17 @@ export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => 
   }),
   invitedBy: one(users, {
     fields: [teamInvitations.invitedById],
+    references: [users.id],
+  }),
+}));
+
+export const teamJoinRequestsRelations = relations(teamJoinRequests, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamJoinRequests.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [teamJoinRequests.userId],
     references: [users.id],
   }),
 }));
@@ -245,9 +268,9 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
     fields: [reviews.submissionId],
     references: [submissions.id],
   }),
-  judge: one(judges, {
-    fields: [reviews.judgeId],
-    references: [judges.id],
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
   }),
 }));
 
@@ -262,4 +285,5 @@ export type Prize = typeof prizes.$inferSelect;
 export type Judge = typeof judges.$inferSelect;
 export type Review = typeof reviews.$inferSelect;
 export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type TeamJoinRequest = typeof teamJoinRequests.$inferSelect;
 export type ExternalTeamMember = typeof externalTeamMembers.$inferSelect;

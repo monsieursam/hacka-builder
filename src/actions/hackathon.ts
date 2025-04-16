@@ -1,15 +1,15 @@
 'use server';
 
 import { db } from '@/db';
-import { Hackathon, hackathons, Prize, Team, teams, tracks, User, submissions, teamMembers } from '@/db/schema';
+import { Hackathon, hackathons, Prize, Team, teams, tracks, User, submissions, teamMembers, hackathonStatusEnum, registrationStatusEnum } from '@/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { revalidateTag, unstable_cache } from 'next/cache';
 import { revalidatePath } from 'next/cache';
 import { eq, and, count } from 'drizzle-orm';
-import { HackathonStatus } from '@/db/schema';
 import { desc, like } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 
 // Define a type for form data to avoid TypeScript issues
 export interface HackathonFormData {
@@ -54,8 +54,8 @@ export async function createHackathon(data: HackathonFormData) {
       minTeamSize: data.minTeamSize,
       maxParticipants: data.maxParticipants || null,
       maxTeams: data.maxTeams || null,
-      status: data.status as HackathonStatus,
-      registrationStatus: data.registrationStatus,
+      status: data.status as typeof hackathonStatusEnum[number],
+      registrationStatus: data.registrationStatus as typeof registrationStatusEnum[number],
       organizerId: data.organizerId!,
       rules: data.rules || null,
     }).returning();
@@ -105,8 +105,8 @@ export async function updateHackathon(id: string, data: HackathonFormData) {
         minTeamSize: data.minTeamSize,
         maxParticipants: data.maxParticipants || null,
         maxTeams: data.maxTeams || null,
-        status: data.status as HackathonStatus,
-        registrationStatus: data.registrationStatus,
+        status: data.status as typeof hackathonStatusEnum[number],
+        registrationStatus: data.registrationStatus as typeof registrationStatusEnum[number],
         rules: data.rules || null,
       })
       .where(eq(hackathons.id, id))
@@ -170,7 +170,7 @@ export async function getHackathons({
   search,
   sortBy = 'startDate',
 }: {
-  status?: HackathonStatus;
+  status?: typeof hackathonStatusEnum[number];
   search?: string;
   sortBy?: 'startDate' | 'name';
 } = {}) {
@@ -237,6 +237,28 @@ export type TeamWithMemberCount = Team & {
   members: number;
 };
 
+export type TeamWithDetails = Team & {
+  members: Array<{
+    id: string;
+    role: string;
+    userId: string;
+    joinedAt: Date;
+    user: {
+      id: string;
+      first_name: string | null;
+      last_name: string | null;
+      email: string;
+      image_url: string | null;
+    };
+  }>;
+  submissions: Array<{
+    id: string;
+    projectName: string | null;
+    description: string;
+    submittedAt: Date;
+  }>;
+};
+
 export async function getTeamsByHackathonId(hackathonId: string): Promise<TeamWithMemberCount[]> {
   try {
     const result = await db.query.teams.findMany({
@@ -275,10 +297,52 @@ export async function getTracksByHackathonId(hackathonId: string) {
   }
 }
 
-export const getTeamsByHackathonIdCached = unstable_cache(
-  getTeamsByHackathonId,
-  ['hackathon-teams']
-);
+export async function getTeamsByHackathonIdCached(hackathonId: string, includeDetails: boolean = false): Promise<TeamWithMemberCount[] | TeamWithDetails[]> {
+  return unstable_cache(
+    async () => {
+      if (includeDetails) {
+        // Return teams with members and submissions
+        const teamsWithDetails = await db.query.teams.findMany({
+          where: eq(teams.hackathonId, hackathonId),
+          with: {
+            members: {
+              with: {
+                user: true
+              }
+            },
+            submissions: true
+          },
+          orderBy: (teams, { asc }) => [asc(teams.name)]
+        });
+        
+        return teamsWithDetails.map(team => ({
+          ...team,
+          submissions: team.submissions.map(sub => ({
+            id: sub.id,
+            projectName: sub.projectName,
+            description: sub.description || '',
+            submittedAt: sub.submittedAt
+          }))
+        }));
+      } else {
+        // Only return basic team info with member count
+        const teamsWithMembers = await db.query.teams.findMany({
+          where: eq(teams.hackathonId, hackathonId),
+          with: {
+            members: true
+          },
+          orderBy: (teams, { asc }) => [asc(teams.name)]
+        });
+        
+        return teamsWithMembers.map(team => ({
+          ...team,
+          members: team.members.length
+        }));
+      }
+    },
+    [`hackathon-teams-${hackathonId}-${includeDetails ? 'detailed' : 'basic'}`]
+  )();
+}
 
 export const getTracksByHackathonIdCached = unstable_cache(
   getTracksByHackathonId,
