@@ -12,6 +12,7 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
+import { getUserTeamForHackathon } from '@/actions/teams';
 
 // Client components for interactive tabs
 
@@ -75,6 +76,13 @@ export default async function HackathonPage({ params }: { params: Promise<{ id: 
   // Get current user to check if they're the organizer
   const { userId } = await auth();
   const isOrganizer = userId === hackathon.organizerId;
+  
+  // Check if the user is already a participant
+  let isParticipant = false;
+  if (userId && !isOrganizer) {
+    const userTeam = await getUserTeamForHackathon(userId, hackathonId);
+    isParticipant = !!userTeam;
+  }
   
   return (
     <main className="pb-12">
@@ -143,9 +151,14 @@ export default async function HackathonPage({ params }: { params: Promise<{ id: 
                 <Link href={`/hackathons/${hackathon.id}/dashboard`}>Dashboard</Link>
               </Button>
           )}
-          {hackathon.registrationStatus === 'open' && (
+          {(!isOrganizer && !isParticipant && hackathon.registrationStatus === 'open') && (
             <Button size="lg" asChild>
               <Link href={`/hackathons/${hackathon.id}/dashboard`}>Register</Link>
+            </Button>
+          )}
+          {(!isOrganizer && isParticipant) && (
+            <Button size="lg" variant="default" asChild>
+              <Link href={`/hackathons/${hackathon.id}/dashboard`}>Dashboard</Link>
             </Button>
           )}
         </div>

@@ -14,7 +14,6 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
-import { DashboardTabs } from './_components/DashboardTabs';
 import { DeleteHackathonButton } from '@/components/hackathons/DeleteHackathonButton';
 
 // Format date for display
@@ -233,15 +232,144 @@ export default async function HackathonDashboard({
           </Card>
         </div>
         
-        {/* Dashboard Tabs */}
-        <div className="max-w-7xl mx-auto px-4">
-          <DashboardTabs 
-            hackathon={hackathon} 
-            isOrganizer={isOrganizer} 
-            userTeam={userTeam} 
-            teams={teams}
-            submissions={submissions}
-          />
+        {/* Overview Content */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Dashboard Overview</h2>
+          
+          {/* Show team creation section for participants without a team */}
+          {!isOrganizer && !userTeam && (
+            <div className="mb-8 p-6 border border-purple-200 bg-purple-50 rounded-lg">
+              <h3 className="text-xl font-bold mb-3">Create Your Team</h3>
+              <p className="mb-4">Start by creating your team to participate in this hackathon.</p>
+              <Button asChild>
+                <Link href={`/hackathons/${hackathon.id}/teams/new`}>Create Team</Link>
+              </Button>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Main Content Area */}
+            <div className="md:col-span-2 space-y-6">
+              {/* Key Dates */}
+              <Card className="p-6">
+                <h3 className="text-lg font-bold mb-4">Key Dates</h3>
+                <ul className="space-y-4">
+                  <li className="flex gap-4">
+                    <div className="w-1 bg-purple-600 rounded-full"></div>
+                    <div>
+                      <p className="font-semibold">Start Date</p>
+                      <p className="text-gray-600">
+                        {new Date(hackathon.startDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </li>
+                  <li className="flex gap-4">
+                    <div className="w-1 bg-purple-600 rounded-full"></div>
+                    <div>
+                      <p className="font-semibold">Submission Deadline</p>
+                      <p className="text-gray-600">
+                        {new Date(hackathon.endDate).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                  </li>
+                </ul>
+              </Card>
+              
+              {/* Quick Actions */}
+              <Card className="p-6">
+                <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {isOrganizer ? (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/announcements/new`}>Create Announcement</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard/teams`}>View Teams</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/judges`}>Manage Judges</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard/prizes`}>Manage Prizes</Link>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard/submit`}>Submit Project</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard/my-team`}>Manage Team</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard/resources`}>View Resources</Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/contact`}>Contact Organizers</Link>
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </Card>
+            </div>
+            
+            {/* Side Content */}
+            <div className="space-y-6">
+              {/* Upcoming Deadlines */}
+              <Card className="p-6">
+                <h3 className="text-lg font-bold mb-4">Upcoming Deadlines</h3>
+                <ul className="space-y-3">
+                  <li className="flex items-center justify-between">
+                    <span className="font-medium">Submission Deadline</span>
+                    <span className="text-sm text-gray-600">
+                      {new Date(hackathon.endDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </li>
+                </ul>
+              </Card>
+              
+              {/* Resources */}
+              <Card className="p-6">
+                <h3 className="text-lg font-bold mb-4">Quick Links</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <Link href={`/hackathons/${hackathon.id}`} className="text-purple-600 hover:underline">
+                      Hackathon Overview
+                    </Link>
+                  </li>
+                  {userTeam && !isOrganizer && (
+                    <li>
+                      <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}`} className="text-purple-600 hover:underline">
+                        Your Team Profile
+                      </Link>
+                    </li>
+                  )}
+                  <li>
+                    <Link href={`/hackathons/${hackathon.id}/rules`} className="text-purple-600 hover:underline">
+                      Rules & Guidelines
+                    </Link>
+                  </li>
+                </ul>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </main>
