@@ -1,10 +1,17 @@
-import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { db } from '@/db';
+import { 
+  getHackathonsOrganizedByUser, 
+  getHackathonsParticipatedByUser 
+} from '@/actions/users';
+import { getJudgeInvitationsForUser } from '@/actions/judges';
+import { Plus, Bell } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { hackathons, teams, teamMembers } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -40,6 +47,10 @@ export default async function DashboardPage() {
     teamId: record.teamId
   }));
   
+  // Get pending judge invitations for the user
+  const judgeInvitations = await getJudgeInvitationsForUser(userId);
+  const pendingInvitations = judgeInvitations.filter(j => !j.isAccepted);
+  
   // Format date for display
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
@@ -50,8 +61,28 @@ export default async function DashboardPage() {
   };
   
   return (
-    <div className="container py-10">
-      <h1 className="text-3xl font-bold mb-8">Your Dashboard</h1>
+    <div className="container py-8">
+      <div className="flex justify-between items-center mb-10">
+        <h1 className="text-3xl font-bold">My Dashboard</h1>
+        
+        <div className="flex gap-4">
+          <Button asChild>
+            <Link href="/hackathons/new">
+              <Plus className="mr-2 h-4 w-4" /> Create Hackathon
+            </Link>
+          </Button>
+          {pendingInvitations.length > 0 && (
+            <Button variant="outline" asChild>
+              <Link href="/dashboard/invitations" className="relative">
+                <Bell className="mr-2 h-4 w-4" /> Invitations
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {pendingInvitations.length}
+                </span>
+              </Link>
+            </Button>
+          )}
+        </div>
+      </div>
       
       {/* Hackathons you're organizing */}
       <div className="mb-12">
@@ -72,10 +103,10 @@ export default async function DashboardPage() {
                 </p>
                 <div className="flex justify-between items-center mb-4">
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    hackathon.status === 'active' ? 'bg-green-100 text-green-800' : 
                     hackathon.status === 'published' ? 'bg-blue-100 text-blue-800' :
                     hackathon.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                    'bg-yellow-100 text-yellow-800'
+                    hackathon.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800' // default for 'draft'
                   }`}>
                     {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
                   </span>
@@ -134,10 +165,10 @@ export default async function DashboardPage() {
                 </p>
                 <div className="flex justify-between items-center mb-4">
                   <span className={`px-2 py-1 text-xs rounded-full ${
-                    hackathon.status === 'active' ? 'bg-green-100 text-green-800' : 
                     hackathon.status === 'published' ? 'bg-blue-100 text-blue-800' :
                     hackathon.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                    'bg-yellow-100 text-yellow-800'
+                    hackathon.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800' // default for 'draft'
                   }`}>
                     {hackathon.status.charAt(0).toUpperCase() + hackathon.status.slice(1)}
                   </span>

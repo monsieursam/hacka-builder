@@ -4,13 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { UserRound, Award, Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, MapPin, Users, Award } from 'lucide-react';
 import { 
   getUserByIdCached, 
   getHackathonsOrganizedByUser, 
   getHackathonsParticipatedByUser 
 } from '@/actions/users';
-import { HackathonStatus } from '@/db/schema';
+import { getJudgeInvitationsForUser } from '@/actions/judges';
+import { hackathonStatusEnum } from '@/db/schema';
 
 // Format date for display
 const formatDate = (date: Date) => {
@@ -53,6 +54,9 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   // Get hackathons the user is participating in
   const participatingHackathons = await getHackathonsParticipatedByUser(userId);
   
+  // Get hackathons the user is judging
+  const judgeInvitations = await getJudgeInvitationsForUser(userId);
+  
   // Get user display name
   const displayName = user.first_name && user.last_name
     ? `${user.first_name} ${user.last_name}`
@@ -80,6 +84,10 @@ export default async function UserProfilePage({ params }: { params: { userId: st
             <div>
               <span className="text-gray-500">Participated</span>
               <p className="font-bold text-2xl">{participatingHackathons.length}</p>
+            </div>
+            <div>
+              <span className="text-gray-500">Judging</span>
+              <p className="font-bold text-2xl">{judgeInvitations.filter(j => j.isAccepted).length}</p>
             </div>
           </div>
         </div>
@@ -138,7 +146,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
       </div>
       
       {/* Participating Hackathons */}
-      <div>
+      <div className="mb-12">
         <h2 className="text-2xl font-bold mb-6">Participating Hackathons</h2>
         
         {participatingHackathons.length > 0 ? (
@@ -179,6 +187,46 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <h3 className="text-xl font-medium text-gray-600 mb-2">No hackathons participated in yet</h3>
             <p className="text-gray-500">This user hasn't participated in any hackathons</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Judging Hackathons */}
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Judging Hackathons</h2>
+        
+        {judgeInvitations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {judgeInvitations.map(judge => (
+              <Card key={judge.id} className="p-6 hover:shadow-md transition-shadow">
+                <h3 className="text-xl font-bold mb-2">{judge.hackathon.name}</h3>
+                <p className="text-gray-600 text-sm mb-2">
+                  <Calendar className="h-4 w-4 inline mr-1" />
+                  {formatDate(new Date(judge.hackathon.startDate))} - {formatDate(new Date(judge.hackathon.endDate))}
+                </p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(judge.hackathon.status)}`}>
+                    {judge.hackathon.status.charAt(0).toUpperCase() + judge.hackathon.status.slice(1)}
+                  </span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    judge.isAccepted ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {judge.isAccepted ? 'Accepted' : 'Pending'}
+                  </span>
+                </div>
+                <Separator className="my-4" />
+                <Button variant="default" className="w-full" asChild>
+                  <Link href={`/hackathons/${judge.hackathon.id}`}>
+                    View Hackathon
+                  </Link>
+                </Button>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <h3 className="text-xl font-medium text-gray-600 mb-2">No judging invitations</h3>
+            <p className="text-gray-500">This user isn't judging any hackathons</p>
           </div>
         )}
       </div>

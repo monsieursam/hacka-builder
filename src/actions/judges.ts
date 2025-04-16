@@ -2,7 +2,7 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { hackathons, judges, users } from '@/db/schema';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -218,5 +218,29 @@ export async function acceptJudgeInvitation(judgeId: string) {
   } catch (error) {
     console.error('Error accepting judge invitation:', error);
     return { success: false, error: 'Failed to accept invitation' };
+  }
+}
+
+/**
+ * Get all judge invitations for a user
+ */
+export async function getJudgeInvitationsForUser(userId: string) {
+  try {
+    if (!userId) {
+      return [];
+    }
+    
+    const judgeInvitations = await db.query.judges.findMany({
+      where: eq(judges.userId, userId),
+      with: {
+        hackathon: true,
+      },
+      orderBy: [desc(judges.invitedAt)]
+    });
+    
+    return judgeInvitations;
+  } catch (error) {
+    console.error('Error getting judge invitations:', error);
+    return [];
   }
 } 
