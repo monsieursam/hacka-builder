@@ -35,12 +35,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface DashboardClientProps {
   hackathonId: string;
+  hackathonName: string;
   isOrganizer: boolean;
   children: React.ReactNode;
 }
 
 export default function DashboardClient({ 
   hackathonId,
+  hackathonName,
   isOrganizer,
   children 
 }: DashboardClientProps) {
@@ -76,8 +78,6 @@ export default function DashboardClient({
       return 'Judges';
     } else if (pathname.includes('/settings')) {
       return 'Hackathon Settings';
-    } else if (pathname.includes('/submit')) {
-      return 'Submit Project';
     } else {
       return 'Dashboard';
     }
@@ -88,8 +88,9 @@ export default function DashboardClient({
       <div className="flex h-screen w-full overflow-hidden">
         <Sidebar className="border-r flex flex-col h-full">
           <SidebarHeader className="border-b px-4 py-3">
-            <Link href={`/hackathons/${hackathonId}`} className="flex items-center">
-              <h2 className="text-lg font-semibold">Hackathon Dashboard</h2>
+            <Link href={`/hackathons/${hackathonId}`} className="flex flex-col">
+              <span className="text-sm text-gray-500 font-medium">Hackathon</span>
+              <h2 className="text-lg font-semibold">{hackathonName}</h2>
             </Link>
           </SidebarHeader>
           
@@ -125,19 +126,6 @@ export default function DashboardClient({
                   <Link href={`/hackathons/${hackathonId}/dashboard/my-team`}>
                     <Users className="mr-2 h-5 w-5" />
                     My Team
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('submit')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/submit`}>
-                    <FileText className="mr-2 h-5 w-5" />
-                    Submit Project
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -244,7 +232,7 @@ export default function DashboardClient({
           </SidebarContent>
           
           <SidebarFooter className="border-t p-2 mt-auto">
-            <div className="space-y-2">
+            <SidebarMenu>
               {/* Only render Settings link if user is an organizer */}
               {isOrganizer && (
                 <SidebarMenuItem>
@@ -273,7 +261,7 @@ export default function DashboardClient({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            </div>
+            </SidebarMenu>
           </SidebarFooter>
         </Sidebar>
         

@@ -145,6 +145,29 @@ export const reviews = pgTable('reviews', {
   updatedAt: timestamp('updated_at'),
 });
 
+export const resources = pgTable('resources', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
+  title: varchar('title', { length: 255 }).notNull(),
+  url: text('url').notNull(),
+  description: text('description'),
+  category: varchar('category', { length: 50 }).notNull(), // 'documentation', 'links', 'technical', 'support'
+  order: integer('order').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const partners = pgTable('partners', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 255 }).notNull(),
+  description: text('description'),
+  logo: text('logo'),
+  website: text('website'),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Then define all relations
 export const usersRelations = relations(users, ({ many }) => ({
   hackathons: many(hackathons),
@@ -162,6 +185,8 @@ export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
   tracks: many(tracks),
   prizes: many(prizes),
   judges: many(judges),
+  resources: many(resources),
+  partners: many(partners),
 }));
 
 export const teamsRelations = relations(teams, ({ one, many }) => ({
@@ -275,6 +300,20 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
   }),
 }));
 
+export const resourcesRelations = relations(resources, ({ one }) => ({
+  hackathon: one(hackathons, {
+    fields: [resources.hackathonId],
+    references: [hackathons.id],
+  }),
+}));
+
+export const partnersRelations = relations(partners, ({ one }) => ({
+  hackathon: one(hackathons, {
+    fields: [partners.hackathonId],
+    references: [hackathons.id],
+  }),
+}));
+
 // Export types
 export type User = typeof users.$inferSelect;
 export type Hackathon = typeof hackathons.$inferSelect;
@@ -288,3 +327,5 @@ export type Review = typeof reviews.$inferSelect;
 export type TeamInvitation = typeof teamInvitations.$inferSelect;
 export type TeamJoinRequest = typeof teamJoinRequests.$inferSelect;
 export type ExternalTeamMember = typeof externalTeamMembers.$inferSelect;
+export type Resource = typeof resources.$inferSelect;
+export type Partner = typeof partners.$inferSelect;

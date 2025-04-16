@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateHackathonForm } from '@/app/hackathons/_components/CreateHackathonForm';
 import { TracksManager } from './_components/TracksManager';
+import { PartnersManager } from './_components/PartnersManager';
 
 export default async function HackathonSettingsPage({ 
   params 
@@ -32,9 +33,10 @@ export default async function HackathonSettingsPage({
   return (
     <div className="py-8 px-6">
       <Tabs defaultValue="general" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 mb-4">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
           <TabsTrigger value="general">General Settings</TabsTrigger>
           <TabsTrigger value="tracks">Tracks & Categories</TabsTrigger>
+          <TabsTrigger value="partners">Partners</TabsTrigger>
           <TabsTrigger value="advanced">Advanced Settings</TabsTrigger>
         </TabsList>
         
@@ -66,6 +68,20 @@ export default async function HackathonSettingsPage({
             </CardHeader>
             <CardContent>
               <TracksManager hackathonId={hackathonId} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="partners">
+          <Card>
+            <CardHeader>
+              <CardTitle>Partners & Sponsors</CardTitle>
+              <CardDescription>
+                Manage partners and sponsors for your hackathon
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PartnersManager hackathonId={hackathonId} />
             </CardContent>
           </Card>
         </TabsContent>

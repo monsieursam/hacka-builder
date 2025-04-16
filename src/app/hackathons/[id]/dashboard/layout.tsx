@@ -33,28 +33,35 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ClerkProvider } from '@clerk/nextjs';
 import DashboardClient from './_components/DashboardClient';
 
+import '@/app/globals.css';
+
 export default async function DashboardLayout({
   children,
   params,
 }: {
   children: React.ReactNode;
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const { userId } = await auth();
-  const hackathonId = params.id;
+  const hackathonId = (await params).id;
   
   const hackathon = await getHackathonByIdCached(hackathonId);
   const isOrganizer = userId === hackathon?.organizerId;
+  
+  if (!hackathon) {
+    return null;
+  }
   
   return (
     <ClerkProvider>
       <html lang="en">
         <head>
-          <title>HackaBuilder - Dashboard</title>
+          <title>{hackathon.name} - Dashboard | HackaBuilder</title>
         </head>
         <body>
           <DashboardClient 
-            hackathonId={hackathonId} 
+            hackathonId={hackathonId}
+            hackathonName={hackathon.name}
             isOrganizer={isOrganizer} 
             children={children} 
           />

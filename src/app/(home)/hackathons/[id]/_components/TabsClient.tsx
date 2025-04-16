@@ -32,6 +32,13 @@ type HackathonWithOrganizer = Hackathon & {
     currency?: string;
     rank?: number;
   }>;
+  partners?: Array<{
+    id: string;
+    name: string;
+    description?: string | null;
+    logo?: string | null;
+    website?: string | null;
+  }>;
 };
 
 type TeamWithMemberCount = Team & {
@@ -119,6 +126,50 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                   </div>
                 )}
               </div>
+              
+              {/* Partners Section */}
+              {hackathon.partners && hackathon.partners.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-bold mb-4">Partners & Sponsors</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {hackathon.partners.map(partner => (
+                      <div key={partner.id} className="flex items-start p-4 border rounded-md">
+                        {partner.logo ? (
+                          <div className="w-16 h-16 mr-4 rounded-md overflow-hidden flex-shrink-0">
+                            <img 
+                              src={partner.logo} 
+                              alt={partner.name} 
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 mr-4 bg-gray-100 rounded-md flex items-center justify-center flex-shrink-0">
+                            <span className="text-xl font-bold text-gray-500">
+                              {partner.name.substring(0, 2).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-bold text-lg">{partner.name}</h4>
+                          {partner.description && (
+                            <p className="text-sm text-gray-600 mt-1">{partner.description}</p>
+                          )}
+                          {partner.website && (
+                            <a 
+                              href={partner.website}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-blue-600 hover:underline mt-2 inline-block"
+                            >
+                              Visit Website
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

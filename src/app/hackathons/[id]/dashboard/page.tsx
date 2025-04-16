@@ -92,37 +92,6 @@ export default async function HackathonDashboard({
         </div>
       )}
       
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{hackathon.name} Dashboard</h1>
-              <p className="text-white/80">
-                {isOrganizer ? 'Organizer Dashboard' : 'Participant Dashboard'}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {isOrganizer && (
-                <>
-                  <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
-                    <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
-                  </Button>
-                  <DeleteHackathonButton
-                    hackathonId={hackathon.id}
-                    hackathonName={hackathon.name}
-                    className="bg-red-500/60 hover:bg-red-600/80 border-transparent"
-                  />
-                </>
-              )}
-              <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
-                <Link href={`/hackathons/${hackathon.id}`}>View Hackathon</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-      
       {/* Summary Cards */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">

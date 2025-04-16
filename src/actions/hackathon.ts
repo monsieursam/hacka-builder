@@ -212,6 +212,16 @@ export const getHackathonsCached = unstable_cache(
 export type HackathonWithOrganizer = Hackathon & {
   organizer: User;
   prizes: Prize[];
+  partners: {
+    id: string;
+    name: string;
+    description?: string | null;
+    logo?: string | null;
+    website?: string | null;
+    hackathonId: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }[];
 };
 
 export async function getHackathonById(id: string): Promise<HackathonWithOrganizer | undefined | null> {
@@ -220,7 +230,8 @@ export async function getHackathonById(id: string): Promise<HackathonWithOrganiz
       where: eq(hackathons.id, id),
       with: {
         organizer: true,
-        prizes: true
+        prizes: true,
+        partners: true
       }
     });
     
