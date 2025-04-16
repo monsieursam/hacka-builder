@@ -1,10 +1,11 @@
 'use server';
 
 import { db } from '@/db';
-import { reviews } from '@/db/schema';
+import { reviews, teams, submissions } from '@/db/schema';
 import { revalidatePath } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
+import { desc } from 'drizzle-orm';
 
 export async function createReview({
   submissionId,
@@ -64,7 +65,15 @@ export async function updateReview({
       eq(reviews.userId, userId)
     ),
     with: {
-      submission: true
+      submission: {
+        with: {
+          team: {
+            with: {
+              hackathon: true
+            }
+          }
+        }
+      }
     }
   });
 
@@ -86,9 +95,11 @@ export async function updateReview({
       )
     );
 
-  if (review.submission?.hackathonId) {
-    revalidatePath(`/hackathons/${review.submission.hackathonId}/submissions/${review.submissionId}`);
-    revalidatePath(`/hackathons/${review.submission.hackathonId}/dashboard/submissions`);
+  // Get the hackathon ID through the team relation
+  const hackathonId = review.submission?.team?.hackathon?.id;
+  if (hackathonId) {
+    revalidatePath(`/hackathons/${hackathonId}/submissions/${review.submissionId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard/submissions`);
   }
 }
 
@@ -113,7 +124,15 @@ export async function deleteReview({
       eq(reviews.userId, userId)
     ),
     with: {
-      submission: true
+      submission: {
+        with: {
+          team: {
+            with: {
+              hackathon: true
+            }
+          }
+        }
+      }
     }
   });
 
@@ -130,9 +149,11 @@ export async function deleteReview({
       )
     );
 
-  if (review.submission?.hackathonId) {
-    revalidatePath(`/hackathons/${review.submission.hackathonId}/submissions/${review.submissionId}`);
-    revalidatePath(`/hackathons/${review.submission.hackathonId}/dashboard/submissions`);
+  // Get the hackathon ID through the team relation
+  const hackathonId = review.submission?.team?.hackathon?.id;
+  if (hackathonId) {
+    revalidatePath(`/hackathons/${hackathonId}/submissions/${review.submissionId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard/submissions`);
   }
 }
 
@@ -159,4 +180,64 @@ export async function getReviewsBySubmission(submissionId: string) {
     },
     orderBy: (reviews, { desc }) => [desc(reviews.createdAt)]
   });
+}
+
+export async function getTeamRankingsForHackathon(hackathonId: string) {
+  // Get all submissions for this hackathon
+  const submissions = await db.query.submissions.findMany({
+    where: (submissions, { eq, inArray }) => {
+      return inArray(
+        submissions.teamId,
+        db.select({ teamId: teams.id }).from(teams).where(eq(teams.hackathonId, hackathonId))
+      );
+    },
+    with: {
+      team: {
+        with: {
+          members: {
+            with: {
+              user: true
+            }
+          }
+        }
+      },
+      reviews: true
+    }
+  });
+
+  // Calculate average scores and prepare ranking data
+  const teamScores = submissions.map(submission => {
+    // Calculate average score from all reviews
+    const totalScore = submission.reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageScore = submission.reviews.length > 0 
+      ? Math.round((totalScore / submission.reviews.length) * 10) / 10 // Round to 1 decimal place
+      : 0;
+    
+    // Find the team leader
+    const leader = submission.team.members.find(member => member.role === 'leader' || member.role === 'owner');
+    
+    return {
+      id: submission.team.id,
+      name: submission.team.name,
+      score: averageScore,
+      memberCount: submission.team.members.length,
+      projectName: submission.projectName,
+      trackId: submission.trackId,
+      leader: leader ? {
+        name: `${leader.user.first_name} ${leader.user.last_name}`,
+        image: leader.user.image_url
+      } : null,
+      reviewCount: submission.reviews.length
+    };
+  });
+  
+  // Sort by score (descending) and add rank
+  const sortedTeams = teamScores
+    .sort((a, b) => b.score - a.score)
+    .map((team, index) => ({
+      ...team,
+      rank: index + 1
+    }));
+  
+  return sortedTeams;
 } 

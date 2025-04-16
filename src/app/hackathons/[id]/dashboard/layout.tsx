@@ -2,7 +2,20 @@
 
 import Link from 'next/link';
 import { useParams, usePathname } from 'next/navigation';
-import { Trophy, Inbox, Users, BookOpen, Bell, Home, LayoutDashboard } from 'lucide-react';
+import { 
+  Trophy, 
+  Inbox, 
+  Users, 
+  BookOpen, 
+  Bell, 
+  Home, 
+  LayoutDashboard, 
+  Award, 
+  Settings, 
+  ChevronRight,
+  FileText,
+  UserCog
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -13,8 +26,11 @@ import {
   SidebarProvider,
   SidebarInset,
   SidebarTrigger,
+  SidebarFooter
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function DashboardLayout({
   children,
@@ -49,6 +65,14 @@ export default function DashboardLayout({
       return 'Resources';
     } else if (pathname.includes('/announcements')) {
       return 'Announcements';
+    } else if (pathname.includes('/leaderboard')) {
+      return 'Leaderboard';
+    } else if (pathname.includes('/judges')) {
+      return 'Judges';
+    } else if (pathname.includes('/settings')) {
+      return 'Hackathon Settings';
+    } else if (pathname.includes('/submit')) {
+      return 'Submit Project';
     } else {
       return 'Dashboard';
     }
@@ -56,11 +80,15 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-        <Sidebar className="border-r">
+      <div className="flex h-screen w-full overflow-hidden">
+        <Sidebar className="border-r flex flex-col h-full">
           <SidebarHeader className="border-b px-4 py-3">
-            <h2 className="text-lg font-semibold">Hackathon Dashboard</h2>
+            <Link href={`/hackathons/${hackathonId}`} className="flex items-center">
+              <h2 className="text-lg font-semibold">Hackathon Dashboard</h2>
+            </Link>
           </SidebarHeader>
-          <SidebarContent className="p-2">
+          
+          <SidebarContent className="p-2 overflow-y-auto">
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
@@ -74,42 +102,15 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('submissions')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/submissions`}>
-                    <Inbox className="mr-2 h-5 w-5" />
-                    Submissions
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('teams')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/teams`}>
-                    <Users className="mr-2 h-5 w-5" />
-                    Teams
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('prizes')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/prizes`}>
-                    <Trophy className="mr-2 h-5 w-5" />
-                    Prizes
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              
+              {/* Participant Section */}
+              <div className="mt-4 mb-2">
+                <h3 className="mb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Participation
+                </h3>
+                <Separator className="mb-2" />
+              </div>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -122,6 +123,93 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('submit')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/submit`}>
+                    <FileText className="mr-2 h-5 w-5" />
+                    Submit Project
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              {/* Hackathon Info Section */}
+              <div className="mt-4 mb-2">
+                <h3 className="mb-2 px-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Hackathon Info
+                </h3>
+                <Separator className="mb-2" />
+              </div>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('submissions')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/submissions`}>
+                    <Inbox className="mr-2 h-5 w-5" />
+                    Submissions
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('teams')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/teams`}>
+                    <Users className="mr-2 h-5 w-5" />
+                    Teams
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('leaderboard')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/leaderboard`}>
+                    <Award className="mr-2 h-5 w-5" />
+                    Leaderboard
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('judges')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/judges`}>
+                    <UserCog className="mr-2 h-5 w-5" />
+                    Judges
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('prizes')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/prizes`}>
+                    <Trophy className="mr-2 h-5 w-5" />
+                    Prizes
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -134,6 +222,7 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -146,6 +235,24 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarContent>
+          
+          <SidebarFooter className="border-t p-2 mt-auto">
+            <div className="space-y-2">
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive('settings')}
+                  size="lg"
+                >
+                  <Link href={`/hackathons/${hackathonId}/dashboard/settings`}>
+                    <Settings className="mr-2 h-5 w-5" />
+                    Settings
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -158,19 +265,32 @@ export default function DashboardLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarContent>
+            </div>
+          </SidebarFooter>
         </Sidebar>
-        <SidebarInset className="flex-1 w-full">
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-6">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="h-4" />
-            <h2 className="text-2xl font-bold">{getPageTitle()}</h2>
+        
+        <SidebarInset className="flex flex-col flex-1 w-full overflow-hidden">
+          <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6 bg-white">
+            <SidebarTrigger>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <ChevronRight className="h-5 w-5" />
+                <span className="sr-only">Toggle Menu</span>
+              </Button>
+            </SidebarTrigger>
+            
+            <h2 className="text-xl font-bold flex-1">{getPageTitle()}</h2>
+            
+            {/* Add user avatar in header */}
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
           </header>
-          <div className="flex-1">
+          
+          <main className="flex-1 overflow-y-auto">
             {children}
-          </div>
+          </main>
         </SidebarInset>
+      </div>
     </SidebarProvider>
   );
 } 
