@@ -1,5 +1,5 @@
 CREATE TABLE "hackathons" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"description" text NOT NULL,
 	"start_date" timestamp NOT NULL,
@@ -14,17 +14,29 @@ CREATE TABLE "hackathons" (
 	"banner" text,
 	"logo" text,
 	"theme" text,
-	"prizes" json DEFAULT '[]'::json,
 	"rules" text,
-	"organizer_id" varchar NOT NULL,
+	"organizer_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "prizes" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" varchar(255) NOT NULL,
+	"description" text,
+	"value" integer,
+	"currency" varchar(10) DEFAULT 'USD',
+	"rank" integer,
+	"hackathon_id" uuid NOT NULL,
+	"track_id" uuid,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "submissions" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"team_id" integer NOT NULL,
-	"track_id" integer,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"team_id" uuid NOT NULL,
+	"track_id" uuid,
 	"project_name" varchar(255) NOT NULL,
 	"description" text NOT NULL,
 	"demo_url" text,
@@ -35,18 +47,18 @@ CREATE TABLE "submissions" (
 );
 --> statement-breakpoint
 CREATE TABLE "team_members" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"team_id" integer NOT NULL,
-	"user_id" varchar NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"team_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
 	"role" varchar(50) DEFAULT 'member' NOT NULL,
 	"joined_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "teams" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"description" text,
-	"hackathon_id" integer NOT NULL,
+	"hackathon_id" uuid NOT NULL,
 	"project_name" varchar(255),
 	"looking_for_members" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -54,25 +66,28 @@ CREATE TABLE "teams" (
 );
 --> statement-breakpoint
 CREATE TABLE "tracks" (
-	"id" serial PRIMARY KEY NOT NULL,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(255) NOT NULL,
 	"description" text,
-	"hackathon_id" integer NOT NULL,
+	"hackathon_id" uuid NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
 	"id" varchar PRIMARY KEY NOT NULL,
-	"name" varchar NOT NULL,
+	"first_name" varchar,
+	"last_name" varchar,
 	"email" varchar NOT NULL,
-	"avatar" text,
+	"image_url" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "hackathons" ADD CONSTRAINT "hackathons_organizer_id_users_id_fk" FOREIGN KEY ("organizer_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "prizes" ADD CONSTRAINT "prizes_hackathon_id_hackathons_id_fk" FOREIGN KEY ("hackathon_id") REFERENCES "public"."hackathons"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "prizes" ADD CONSTRAINT "prizes_track_id_tracks_id_fk" FOREIGN KEY ("track_id") REFERENCES "public"."tracks"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submissions" ADD CONSTRAINT "submissions_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "submissions" ADD CONSTRAINT "submissions_track_id_tracks_id_fk" FOREIGN KEY ("track_id") REFERENCES "public"."tracks"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_members" ADD CONSTRAINT "team_members_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

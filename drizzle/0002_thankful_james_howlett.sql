@@ -1,0 +1,1 @@
+ALTER TABLE "team_members" ALTER COLUMN "user_id" SET DATA TYPE varchar;

@@ -1,6 +1,6 @@
 {
-  "id": "703e1848-d3f9-4e51-98aa-564fcf6eb111",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "dfd41055-a0a9-462c-a6ba-e8cd767f720e",
+  "prevId": "784750f6-0bc2-4fc6-b619-75495a55e2ae",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -112,7 +112,7 @@
         },
         "organizer_id": {
           "name": "organizer_id",
-          "type": "uuid",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -379,7 +379,7 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "uuid",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },

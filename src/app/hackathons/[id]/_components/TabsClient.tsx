@@ -102,9 +102,9 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                 <h3 className="text-xl font-bold mb-2">Organized by</h3>
                 {hackathon.organizer && (
                   <div className="flex items-center">
-                    {hackathon.organizer.avatar && (
+                    {hackathon.organizer.image_url && (
                       <img 
-                        src={hackathon.organizer.avatar} 
+                        src={hackathon.organizer.image_url} 
                         alt={hackathon.organizer.name} 
                         className="w-12 h-12 rounded-full mr-3 object-cover"
                       />

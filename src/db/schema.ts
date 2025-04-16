@@ -1,11 +1,12 @@
-import { pgTable, serial, text, timestamp, varchar, boolean, integer, json, foreignKey } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, varchar, boolean, integer, json, foreignKey, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
   id: varchar('id').primaryKey(),
-  name: varchar('name').notNull(),
+  first_name: varchar('first_name'),
+  last_name: varchar('last_name'),
   email: varchar('email').notNull().unique(),
-  avatar: text('avatar'),
+  image_url: text('image_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -16,7 +17,7 @@ export const usersRelations = relations(users, ({ many }) => ({
 }));
 
 export const hackathons = pgTable('hackathons', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description').notNull(),
   startDate: timestamp('start_date').notNull(),
@@ -48,10 +49,10 @@ export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
 }));
 
 export const teams = pgTable('teams', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  hackathonId: integer('hackathon_id').notNull().references(() => hackathons.id),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
   projectName: varchar('project_name', { length: 255 }),
   lookingForMembers: boolean('looking_for_members').default(true).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -67,8 +68,8 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
 }));
 
 export const teamMembers = pgTable('team_members', {
-  id: serial('id').primaryKey(),
-  teamId: integer('team_id').notNull().references(() => teams.id),
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').notNull().references(() => teams.id),
   userId: varchar('user_id').notNull().references(() => users.id),
   role: varchar('role', { length: 50 }).default('member').notNull(),
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
@@ -86,10 +87,10 @@ export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
 }));
 
 export const tracks = pgTable('tracks', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  hackathonId: integer('hackathon_id').notNull().references(() => hackathons.id),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -102,9 +103,9 @@ export const tracksRelations = relations(tracks, ({ one }) => ({
 }));
 
 export const submissions = pgTable('submissions', {
-  id: serial('id').primaryKey(),
-  teamId: integer('team_id').notNull().references(() => teams.id),
-  trackId: integer('track_id').references(() => tracks.id),
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').notNull().references(() => teams.id),
+  trackId: uuid('track_id').references(() => tracks.id),
   projectName: varchar('project_name', { length: 255 }).notNull(),
   description: text('description').notNull(),
   demoUrl: text('demo_url'),
@@ -126,14 +127,14 @@ export const submissionsRelations = relations(submissions, ({ one }) => ({
 }));
 
 export const prizes = pgTable('prizes', {
-  id: serial('id').primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   value: integer('value'),
   currency: varchar('currency', { length: 10 }).default('USD'),
   rank: integer('rank'),
-  hackathonId: integer('hackathon_id').notNull().references(() => hackathons.id),
-  trackId: integer('track_id').references(() => tracks.id),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
+  trackId: uuid('track_id').references(() => tracks.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

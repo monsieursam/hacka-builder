@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       // Check if user already exists
       const existingUser = await db.select()
         .from(users)
-        .where(eq(users.id, id))
+        .where(eq(users.id, id as any))
         .limit(1);
 
       if (existingUser.length > 0) {
@@ -72,18 +72,20 @@ export async function POST(req: Request) {
         await db.update(users)
           .set({
             email: primaryEmail,
-            first_name: first_name,
-            last_name: last_name,
+            first_name: first_name || '',
+            last_name: last_name || '',
+            name: `${first_name || ''} ${last_name || ''}`.trim(),
             image_url: image_url,
           })
-          .where(eq(users.id, id));
+          .where(eq(users.id, id as any));
       } else {
         // Create new user
         await db.insert(users).values({
-          id: id,
+          id: id as any,
           email: primaryEmail,
-          first_name: first_name,
-          last_name: last_name,
+          first_name: first_name || '',
+          last_name: last_name || '',
+          name: `${first_name || ''} ${last_name || ''}`.trim(),
           image_url: image_url,
         });
       }
@@ -106,7 +108,7 @@ export async function POST(req: Request) {
 
     try {
       // Delete the user from our database
-      await db.delete(users).where(eq(users.id, id.toString()));
+      await db.delete(users).where(eq(users.id, id.toString() as any));
       return NextResponse.json('User deleted successfully', { status: 200 });
     } catch (error) {
       console.error('Error deleting user from database:', error);

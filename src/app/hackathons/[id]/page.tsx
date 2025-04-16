@@ -1,102 +1,27 @@
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { notFound } from 'next/navigation';
-import { db } from '@/db';
-import { hackathons, teams, tracks, users, teamMembers, prizes, Team, Hackathon, User, Prize } from '@/db/schema';
-import { eq, count } from 'drizzle-orm';
-import { unstable_cache } from 'next/cache';
 import { TabsClient } from './_components/TabsClient';
+import { auth } from '@clerk/nextjs/server';
+import { getHackathonByIdCached, getTeamsByHackathonIdCached, getTracksByHackathonIdCached } from '@/actions/hackathon';
+import { 
+  Breadcrumb, 
+  BreadcrumbItem, 
+  BreadcrumbLink, 
+  BreadcrumbList, 
+  BreadcrumbPage, 
+  BreadcrumbSeparator 
+} from '@/components/ui/breadcrumb';
 
 // Client components for interactive tabs
 
 // Get a single hackathon by ID with organizer data
 
-export type HackathonWithOrganizer = Hackathon & {
-  organizer: User;
-  prizes: Prize[];
-};
 
-export async function getHackathonById(id: number): Promise<HackathonWithOrganizer | undefined | null> {
-  try {
-    const result = await db.query.hackathons.findFirst({
-      where: eq(hackathons.id, id),
-      with: {
-        organizer: true,
-        prizes: true
-      }
-    });
-    
-    return result;
-  } catch (error) {
-    console.error(`Failed to fetch hackathon with ID ${id}:`, error);
-    return null;
-  }
-}
-
-export type TeamWithMemberCount = Team & {
-  members: number;
-};
-
-export async function getTeamsByHackathonId(hackathonId: number): Promise<TeamWithMemberCount[]> {
-  try {
-    const result = await db.query.teams.findMany({
-      where: eq(teams.hackathonId, hackathonId),
-      with: {
-        members: {
-          with: {
-            user: true,
-          }
-        }
-      }
-    });
-    
-    // Transform the data to include member count
-    return result.map(team => ({
-      ...team,
-      members: team.members.length,
-    }));
-  } catch (error) {
-    console.error(`Failed to fetch teams for hackathon ${hackathonId}:`, error);
-    return [];
-  }
-}
-
-// Get tracks for a hackathon
-export async function getTracksByHackathonId(hackathonId: number) {
-  try {
-    const result = await db.query.tracks.findMany({
-      where: eq(tracks.hackathonId, hackathonId),
-    });
-    
-    return result;
-  } catch (error) {
-    console.error(`Failed to fetch tracks for hackathon ${hackathonId}:`, error);
-    return [];
-  }
-}
-
-// Cache the data fetching functions
-export const getHackathonByIdCached = unstable_cache(
-  getHackathonById,
-  ['hackathon-detail']
-);
-
-export const getTeamsByHackathonIdCached = unstable_cache(
-  getTeamsByHackathonId,
-  ['hackathon-teams']
-);
-
-export const getTracksByHackathonIdCached = unstable_cache(
-  getTracksByHackathonId,
-  ['hackathon-tracks']
-);
 
 // Format date for display
 const formatDate = (date: Date) => {
-  return date.toLocaleDateString('en-US', {
+  return date?.toLocaleDateString?.('en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -134,12 +59,9 @@ const getRegistrationStatusColor = (status: string) => {
   }
 };
 
-export default async function HackathonPage({ params }: { params: { id: string } }) {
-  const hackathonId = parseInt(params.id, 10);
-  
-  if (isNaN(hackathonId)) {
-    notFound();
-  }
+export default async function HackathonPage({ params }: { params: Promise<{ id: string }> }) {
+  const {id: hackathonId} = await params;
+
   
   const hackathon = await getHackathonByIdCached(hackathonId);
   
@@ -149,9 +71,36 @@ export default async function HackathonPage({ params }: { params: { id: string }
   
   const teams = await getTeamsByHackathonIdCached(hackathonId);
   const tracks = await getTracksByHackathonIdCached(hackathonId);
+
+  // Get current user to check if they're the organizer
+  const { userId } = await auth();
+  const isOrganizer = userId === hackathon.organizerId;
   
   return (
     <main className="pb-12">
+      {/* Breadcrumb */}
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/">Home</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/hackathons">Hackathons</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{hackathon.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+      
       {/* Hero Banner */}
       <div className="relative h-80 w-full">
         {hackathon.banner ? (
@@ -189,6 +138,11 @@ export default async function HackathonPage({ params }: { params: { id: string }
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8 justify-center md:justify-end">
+          {isOrganizer && (
+            <Button size="lg" variant="default" asChild>
+              <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
+            </Button>
+          )}
           {hackathon.registrationStatus === 'open' && (
             <Button size="lg" asChild>
               <Link href={`/hackathons/${hackathon.id}/register`}>Register Now</Link>
