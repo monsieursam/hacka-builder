@@ -234,13 +234,15 @@ export default async function HackathonDashboard({
         </div>
         
         {/* Dashboard Tabs */}
-        <DashboardTabs 
-          hackathon={hackathon as any}
-          isOrganizer={isOrganizer}
-          userTeam={userTeam || undefined}
-          teams={teams}
-          submissions={submissions}
-        />
+        <div className="max-w-7xl mx-auto px-4">
+          <DashboardTabs 
+            hackathon={hackathon} 
+            isOrganizer={isOrganizer} 
+            userTeam={userTeam} 
+            teams={teams}
+            submissions={submissions}
+          />
+        </div>
       </div>
     </main>
   );

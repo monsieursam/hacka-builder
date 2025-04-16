@@ -139,14 +139,9 @@ export default async function HackathonPage({ params }: { params: Promise<{ id: 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8 justify-center md:justify-end">
           {isOrganizer && (
-            <>
               <Button size="lg" variant="default" asChild>
                 <Link href={`/hackathons/${hackathon.id}/dashboard`}>Dashboard</Link>
               </Button>
-              <Button size="lg" variant="default" asChild>
-                <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
-              </Button>
-            </>
           )}
           {hackathon.registrationStatus === 'open' && (
             <Button size="lg" asChild>
