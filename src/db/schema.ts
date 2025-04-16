@@ -36,6 +36,7 @@ export const hackathons = pgTable('hackathons', {
   theme: text('theme'),
   rules: text('rules'),
   showAllSubmissions: boolean('show_all_submissions').default(false).notNull(),
+  leaderboardPublished: boolean('leaderboard_published').default(false).notNull(),
   organizerId: varchar('organizer_id').notNull().references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

@@ -18,7 +18,7 @@ export default async function SubmissionsPage({
   searchParams
 }: { 
   params: Promise<{ id: string }>;
-  searchParams: { edit?: string };
+  searchParams: Promise<{ edit?: string }>;
 }) {
   const { id } = await params;
   const hackathonId = id;
@@ -53,7 +53,7 @@ export default async function SubmissionsPage({
   const tracks = await getTracksByHackathonId(hackathonId);
   
   // Check if we're in edit mode
-  const isEdit = searchParams.edit === 'true';
+  const isEdit = (await searchParams).edit === 'true';
   
   // Get submissions
   let submissions: any[] = [];

@@ -511,3 +511,45 @@ export async function deleteHackathon(hackathonId: string) {
     return { success: false, error: 'Failed to delete hackathon' };
   }
 }
+
+export async function updateLeaderboardPublishStatus(id: string, isPublished: boolean) {
+  // Check authentication
+  const { userId } = await auth();
+  if (!userId) {
+    redirect('/sign-in');
+  }
+
+  try {
+    // Get the hackathon to check ownership
+    const hackathon = await db.query.hackathons.findFirst({
+      where: eq(hackathons.id, id)
+    });
+
+    if (!hackathon) {
+      throw new Error('Hackathon not found');
+    }
+
+    // Ensure the user can only update their own hackathon
+    if (userId !== hackathon.organizerId) {
+      throw new Error('Unauthorized');
+    }
+
+    // Update the hackathon leaderboard published status
+    const [updatedHackathon] = await db.update(hackathons)
+      .set({
+        leaderboardPublished: isPublished,
+      })
+      .where(eq(hackathons.id, id))
+      .returning();
+
+    // Revalidate paths
+    revalidatePath(`/hackathons/${id}`);
+    revalidatePath(`/hackathons/${id}/dashboard/leaderboard`);
+    revalidatePath('/hackathons');
+
+    return updatedHackathon;
+  } catch (error) {
+    console.error('Failed to update leaderboard publish status:', error);
+    throw new Error('Failed to update leaderboard publish status');
+  }
+}

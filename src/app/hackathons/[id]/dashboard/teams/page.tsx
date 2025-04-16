@@ -22,13 +22,6 @@ export default async function TeamsPage({
     redirect('/hackathons');
   }
   
-  // Check if the user is an organizer
-  const isOrganizer = userId === hackathon.organizerId;
-  
-  // Only organizers should be able to access this page
-  if (!isOrganizer) {
-    redirect(`/hackathons/${hackathonId}/dashboard`);
-  }
   
   // Get all teams with members and submissions
   const teams = await getTeamsWithDetailsForHackathonCached(hackathonId);

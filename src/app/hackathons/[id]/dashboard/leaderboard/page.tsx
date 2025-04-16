@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserRound, Trophy, Medal } from 'lucide-react';
 import { getTeamRankingsForHackathon } from '@/actions/reviews';
 import { getTracksForHackathon } from '@/actions/tracks';
+import { PublishLeaderboardButton } from './_components/PublishLeaderboardButton';
 
 interface TeamRanking {
   id: string;
@@ -128,6 +129,21 @@ export default async function LeaderboardPage({
     redirect('/hackathons');
   }
   
+  const isOrganizer = hackathon.organizerId === userId;
+  const canViewLeaderboard = hackathon.leaderboardPublished || isOrganizer;
+  
+  if (!canViewLeaderboard) {
+    return (
+      <div className="py-8 px-6">
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <h3 className="text-xl font-semibold mb-3">Leaderboard Not Available</h3>
+          <p className="text-gray-500 mb-1">The leaderboard for this hackathon has not been published yet.</p>
+          <p className="text-gray-500 text-sm">Check back later when the organizer publishes the results.</p>
+        </div>
+      </div>
+    );
+  }
+  
   // Fetch real team rankings from the database
   const teams = await getTeamRankingsForHackathon(hackathonId);
   
@@ -143,6 +159,29 @@ export default async function LeaderboardPage({
 
   return (
     <div className="py-8 px-6">
+      {isOrganizer && !hackathon.leaderboardPublished && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-6">
+          <div className="flex justify-between items-center">
+            <p className="text-amber-800 font-medium">
+              This leaderboard is only visible to you as an organizer. Publish it when you're ready for all participants to see it.
+            </p>
+            <PublishLeaderboardButton 
+              hackathonId={hackathonId} 
+              isPublished={hackathon.leaderboardPublished} 
+            />
+          </div>
+        </div>
+      )}
+      
+      {isOrganizer && hackathon.leaderboardPublished && (
+        <div className="flex justify-end mb-4">
+          <PublishLeaderboardButton 
+            hackathonId={hackathonId}
+            isPublished={hackathon.leaderboardPublished}
+          />
+        </div>
+      )}
+      
       <p className="text-gray-600 mb-6">
         Teams are ranked based on average scores from judges across all criteria.
       </p>

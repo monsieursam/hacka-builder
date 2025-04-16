@@ -1,0 +1,1 @@
+ALTER TABLE "hackathons" ADD COLUMN "leaderboard_published" boolean DEFAULT false NOT NULL;

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CreateHackathonForm } from '@/app/hackathons/_components/CreateHackathonForm';
 import { TracksManager } from './_components/TracksManager';
 import { PartnersManager } from './_components/PartnersManager';
+import { AdvancedSettings } from './_components/AdvancedSettings';
 
 export default async function HackathonSettingsPage({ 
   params 
@@ -95,7 +96,10 @@ export default async function HackathonSettingsPage({
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500">Advanced settings will be available soon.</p>
+              <AdvancedSettings 
+                hackathonId={hackathonId} 
+                leaderboardPublished={hackathon.leaderboardPublished} 
+              />
             </CardContent>
           </Card>
         </TabsContent>

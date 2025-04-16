@@ -50,6 +50,13 @@
       "when": 1744844561063,
       "tag": "0006_salty_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1744846085658,
+      "tag": "0007_greedy_corsair",
+      "breakpoints": true
     }
   ]
 }
