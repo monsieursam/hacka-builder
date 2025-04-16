@@ -62,8 +62,13 @@ export default async function HackathonDashboard({
     // Get all hackathon submissions for organizers
     submissions = await getSubmissionsByHackathonId(hackathonId);
   } else if (userTeam) {
-    // Get only the team's submission for participants
-    submissions = await getSubmissionsByHackathonId(hackathonId, userTeam.id);
+    if (hackathon.showAllSubmissions) {
+      // If the hackathon allows all participants to see all submissions
+      submissions = await getSubmissionsByHackathonId(hackathonId);
+    } else {
+      // Get only the team's submission for participants
+      submissions = await getSubmissionsByHackathonId(hackathonId, userTeam.id);
+    }
   }
   
   // Get all teams if organizer

@@ -34,6 +34,7 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
     maxTeams: 0,
     status: 'draft',
     registrationStatus: 'closed',
+    showAllSubmissions: false,
   });
 
   // If editing, populate form with existing hackathon data
@@ -52,6 +53,7 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
         maxTeams: hackathon.maxTeams || 0,
         status: hackathon.status,
         registrationStatus: hackathon.registrationStatus,
+        showAllSubmissions: hackathon.showAllSubmissions || false,
       });
     }
   }, [isEditing, hackathon]);
@@ -227,20 +229,6 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
             </SelectContent>
           </Select>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <input
-            id="isVirtual"
-            name="isVirtual"
-            type="checkbox"
-            checked={formData.isVirtual}
-            onChange={handleCheckboxChange}
-            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-          />
-          <label htmlFor="isVirtual" className="text-sm font-medium">
-            Virtual Hackathon
-          </label>
-        </div>
       </div>
       
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -284,6 +272,36 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
             value={formData.maxParticipants}
             onChange={handleChange}
           />
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="flex items-center space-x-2">
+          <input
+            id="isVirtual"
+            name="isVirtual"
+            type="checkbox"
+            checked={formData.isVirtual}
+            onChange={handleCheckboxChange}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+          />
+          <label htmlFor="isVirtual" className="text-sm font-medium">
+            Virtual Hackathon
+          </label>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <input
+            id="showAllSubmissions"
+            name="showAllSubmissions"
+            type="checkbox"
+            checked={formData.showAllSubmissions}
+            onChange={handleCheckboxChange}
+            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
+          />
+          <label htmlFor="showAllSubmissions" className="text-sm font-medium">
+            Allow participants to view all submissions
+          </label>
         </div>
       </div>
       

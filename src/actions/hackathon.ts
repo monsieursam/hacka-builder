@@ -25,6 +25,7 @@ export interface HackathonFormData {
   maxTeams?: number | null;
   status: string;
   registrationStatus: string;
+  showAllSubmissions?: boolean;
   organizerId?: string;
   rules?: string | null;
 }
@@ -56,6 +57,7 @@ export async function createHackathon(data: HackathonFormData) {
       maxTeams: data.maxTeams || null,
       status: data.status as typeof hackathonStatusEnum[number],
       registrationStatus: data.registrationStatus as typeof registrationStatusEnum[number],
+      showAllSubmissions: data.showAllSubmissions || false,
       organizerId: data.organizerId!,
       rules: data.rules || null,
     }).returning();
@@ -107,6 +109,7 @@ export async function updateHackathon(id: string, data: HackathonFormData) {
         maxTeams: data.maxTeams || null,
         status: data.status as typeof hackathonStatusEnum[number],
         registrationStatus: data.registrationStatus as typeof registrationStatusEnum[number],
+        showAllSubmissions: data.showAllSubmissions !== undefined ? data.showAllSubmissions : hackathon.showAllSubmissions,
         rules: data.rules || null,
       })
       .where(eq(hackathons.id, id))

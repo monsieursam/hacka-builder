@@ -47,17 +47,22 @@ export default async function SubmissionsPage({
   
   // Get submissions
   let submissions: any[] = [];
-  if (isOrganizer) {
-    // Get all hackathon submissions for organizers
+  if (isOrganizer || isJudge) {
+    // Get all hackathon submissions for organizers and judges
     submissions = await getSubmissionsByHackathonId(hackathonId);
   } else if (userTeam) {
-    // Get only the team's submission for participants
-    submissions = await getSubmissionsByHackathonId(hackathonId, userTeam.id);
+    if (hackathon.showAllSubmissions) {
+      // If the hackathon allows all participants to see all submissions
+      submissions = await getSubmissionsByHackathonId(hackathonId);
+    } else {
+      // Get only the team's submission for participants
+      submissions = await getSubmissionsByHackathonId(hackathonId, userTeam.id);
+    }
   }
 
   return (
     <div className="py-8 px-6">
-      {(isOrganizer || isJudge) && 
+      {(isOrganizer || isJudge || hackathon.showAllSubmissions) && 
         <div>
           {submissions.length === 0 ? (
             <div className="text-center py-10">
@@ -79,7 +84,7 @@ export default async function SubmissionsPage({
         </div>
       }
 
-      {!isOrganizer && !isJudge && (
+      {!isOrganizer && !isJudge && !hackathon.showAllSubmissions && (
         // Participant view of their submission
         <>
           {submissions.length > 0 ? (
