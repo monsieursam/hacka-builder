@@ -1,20 +1,17 @@
 import { pgTable, serial, text, timestamp, varchar, boolean, integer, json, foreignKey, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
+// Define all tables first
 export const users = pgTable('users', {
   id: varchar('id').primaryKey(),
   first_name: varchar('first_name'),
   last_name: varchar('last_name'),
+  name: varchar('name'),
   email: varchar('email').notNull().unique(),
   image_url: text('image_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
-
-export const usersRelations = relations(users, ({ many }) => ({
-  hackathons: many(hackathons),
-  teamMembers: many(teamMembers),
-}));
 
 export const hackathons = pgTable('hackathons', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -39,16 +36,6 @@ export const hackathons = pgTable('hackathons', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
-  organizer: one(users, {
-    fields: [hackathons.organizerId],
-    references: [users.id],
-  }),
-  teams: many(teams),
-  tracks: many(tracks),
-  prizes: many(prizes),
-}));
-
 export const teams = pgTable('teams', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 255 }).notNull(),
@@ -60,14 +47,6 @@ export const teams = pgTable('teams', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
-export const teamsRelations = relations(teams, ({ one, many }) => ({
-  hackathon: one(hackathons, {
-    fields: [teams.hackathonId],
-    references: [hackathons.id],
-  }),
-  members: many(teamMembers),
-}));
-
 export const teamMembers = pgTable('team_members', {
   id: uuid('id').primaryKey().defaultRandom(),
   teamId: uuid('team_id').notNull().references(() => teams.id),
@@ -75,17 +54,6 @@ export const teamMembers = pgTable('team_members', {
   role: varchar('role', { length: 50 }).default('member').notNull(),
   joinedAt: timestamp('joined_at').defaultNow().notNull(),
 });
-
-export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
-  team: one(teams, {
-    fields: [teamMembers.teamId],
-    references: [teams.id],
-  }),
-  user: one(users, {
-    fields: [teamMembers.userId],
-    references: [users.id],
-  }),
-}));
 
 export const tracks = pgTable('tracks', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -95,37 +63,6 @@ export const tracks = pgTable('tracks', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
-
-export const tracksRelations = relations(tracks, ({ one }) => ({
-  hackathon: one(hackathons, {
-    fields: [tracks.hackathonId],
-    references: [hackathons.id],
-  }),
-}));
-
-export const submissions = pgTable('submissions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  teamId: uuid('team_id').notNull().references(() => teams.id),
-  trackId: uuid('track_id').references(() => tracks.id),
-  projectName: varchar('project_name', { length: 255 }).notNull(),
-  description: text('description').notNull(),
-  demoUrl: text('demo_url'),
-  repoUrl: text('repo_url'),
-  presentationUrl: text('presentation_url'),
-  submittedAt: timestamp('submitted_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-export const submissionsRelations = relations(submissions, ({ one }) => ({
-  team: one(teams, {
-    fields: [submissions.teamId],
-    references: [teams.id],
-  }),
-  track: one(tracks, {
-    fields: [submissions.trackId],
-    references: [tracks.id],
-  }),
-}));
 
 export const prizes = pgTable('prizes', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -140,6 +77,87 @@ export const prizes = pgTable('prizes', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const submissions = pgTable('submissions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  teamId: uuid('team_id').notNull().references(() => teams.id),
+  trackId: uuid('track_id').references(() => tracks.id),
+  projectName: varchar('project_name', { length: 255 }).notNull(),
+  description: text('description').notNull(),
+  demoUrl: text('demo_url'),
+  repoUrl: text('repo_url'),
+  presentationUrl: text('presentation_url'),
+  submittedAt: timestamp('submitted_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const judges = pgTable('judges', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  hackathonId: uuid('hackathon_id').notNull().references(() => hackathons.id),
+  userId: varchar('user_id').notNull().references(() => users.id),
+  isAccepted: boolean('is_accepted').default(false).notNull(),
+  invitedAt: timestamp('invited_at').defaultNow().notNull(),
+  acceptedAt: timestamp('accepted_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const reviews = pgTable('reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  submissionId: uuid('submission_id').notNull().references(() => submissions.id),
+  judgeId: uuid('judge_id').notNull().references(() => judges.id),
+  score: integer('score').notNull(),
+  feedback: text('feedback'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Then define all relations
+export const usersRelations = relations(users, ({ many }) => ({
+  hackathons: many(hackathons),
+  teamMembers: many(teamMembers),
+  judges: many(judges),
+}));
+
+export const hackathonsRelations = relations(hackathons, ({ one, many }) => ({
+  organizer: one(users, {
+    fields: [hackathons.organizerId],
+    references: [users.id],
+  }),
+  teams: many(teams),
+  tracks: many(tracks),
+  prizes: many(prizes),
+  judges: many(judges),
+}));
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+  hackathon: one(hackathons, {
+    fields: [teams.hackathonId],
+    references: [hackathons.id],
+  }),
+  members: many(teamMembers),
+  submissions: many(submissions),
+}));
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMembers.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [teamMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const tracksRelations = relations(tracks, ({ one, many }) => ({
+  hackathon: one(hackathons, {
+    fields: [tracks.hackathonId],
+    references: [hackathons.id],
+  }),
+  prizes: many(prizes),
+  submissions: many(submissions),
+}));
+
 export const prizesRelations = relations(prizes, ({ one }) => ({
   hackathon: one(hackathons, {
     fields: [prizes.hackathonId],
@@ -151,13 +169,48 @@ export const prizesRelations = relations(prizes, ({ one }) => ({
   }),
 }));
 
-export const hackathonStatusEnum = ['draft', 'published', 'active', 'completed', 'archived'] as const;
-export type HackathonStatus = typeof hackathonStatusEnum[number];
+export const submissionsRelations = relations(submissions, ({ one, many }) => ({
+  team: one(teams, {
+    fields: [submissions.teamId],
+    references: [teams.id],
+  }),
+  track: one(tracks, {
+    fields: [submissions.trackId],
+    references: [tracks.id],
+  }),
+  reviews: many(reviews),
+}));
 
+export const judgesRelations = relations(judges, ({ one, many }) => ({
+  hackathon: one(hackathons, {
+    fields: [judges.hackathonId],
+    references: [hackathons.id],
+  }),
+  user: one(users, {
+    fields: [judges.userId],
+    references: [users.id],
+  }),
+  reviews: many(reviews),
+}));
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  submission: one(submissions, {
+    fields: [reviews.submissionId],
+    references: [submissions.id],
+  }),
+  judge: one(judges, {
+    fields: [reviews.judgeId],
+    references: [judges.id],
+  }),
+}));
+
+// Export types
+export type User = typeof users.$inferSelect;
 export type Hackathon = typeof hackathons.$inferSelect;
 export type Team = typeof teams.$inferSelect;
-export type Track = typeof tracks.$inferSelect;
-export type User = typeof users.$inferSelect; 
 export type TeamMember = typeof teamMembers.$inferSelect;
+export type Track = typeof tracks.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type Prize = typeof prizes.$inferSelect;
+export type Judge = typeof judges.$inferSelect;
+export type Review = typeof reviews.$inferSelect;

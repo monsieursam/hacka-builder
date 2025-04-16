@@ -13,6 +13,8 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
+import { DeleteHackathonButton } from '@/components/hackathons/DeleteHackathonButton';
+import { Separator } from '@/components/ui/separator';
 
 export default async function EditHackathonPage({ params }: { params: Promise<{ id: string }> }) {
   // Get current user
@@ -75,7 +77,16 @@ export default async function EditHackathonPage({ params }: { params: Promise<{ 
           </BreadcrumbList>
         </Breadcrumb>
         
-        <h1 className="text-3xl font-bold mb-8">Edit Hackathon</h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Edit Hackathon</h1>
+          <DeleteHackathonButton 
+            hackathonId={hackathon.id} 
+            hackathonName={hackathon.name} 
+          />
+        </div>
+        
+        <Separator className="mb-8" />
+        
         <CreateHackathonForm 
           userId={userId} 
           hackathon={hackathon} 

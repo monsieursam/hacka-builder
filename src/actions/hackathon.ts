@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { Hackathon, hackathons, Prize, Team, teams, tracks, User, submissions } from '@/db/schema';
+import { Hackathon, hackathons, Prize, Team, teams, tracks, User, submissions, teamMembers } from '@/db/schema';
 import { auth } from '@clerk/nextjs/server';
 import { redirect } from 'next/navigation';
 import { revalidateTag, unstable_cache } from 'next/cache';
@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache';
 import { eq, and, count } from 'drizzle-orm';
 import { HackathonStatus } from '@/db/schema';
 import { desc, like } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 // Define a type for form data to avoid TypeScript issues
 export interface HackathonFormData {
@@ -356,5 +357,79 @@ export async function checkAndUpdateHackathonRegistrationStatus(hackathonId: str
   } catch (error) {
     console.error('Error checking hackathon registration status:', error);
     return false;
+  }
+}
+
+/**
+ * Delete a hackathon - only available to the hackathon creator
+ * @param hackathonId The ID of the hackathon to delete
+ * @returns Result of the operation
+ */
+export async function deleteHackathon(hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Authentication required' };
+    }
+
+    // Get the hackathon to check ownership
+    const hackathon = await getHackathonById(hackathonId);
+    
+    if (!hackathon) {
+      return { success: false, error: 'Hackathon not found' };
+    }
+
+    // Ensure the user is the creator of the hackathon
+    if (userId !== hackathon.organizerId) {
+      return { success: false, error: 'Unauthorized - only the hackathon creator can delete it' };
+    }
+
+    // Get all teams for this hackathon to delete their associated records
+    const teamsForHackathon = await db
+      .select({ id: teams.id })
+      .from(teams)
+      .where(eq(teams.hackathonId, hackathonId));
+    
+    const teamIds = teamsForHackathon.map(t => t.id);
+
+    // Begin a transaction to ensure all related records are deleted
+    await db.transaction(async (tx) => {
+      // Delete submissions for teams in this hackathon
+      if (teamIds.length > 0) {
+        await tx.delete(submissions)
+          .where(
+            // Use in operation if available or multiple or conditions
+            sql`${submissions.teamId} IN (${sql.join(teamIds)})`
+          );
+
+        // Delete team members
+        await tx.delete(teamMembers)
+          .where(
+            sql`${teamMembers.teamId} IN (${sql.join(teamIds)})`
+          );
+      }
+
+      // Delete tracks
+      await tx.delete(tracks)
+        .where(eq(tracks.hackathonId, hackathonId));
+
+      // Delete teams
+      await tx.delete(teams)
+        .where(eq(teams.hackathonId, hackathonId));
+
+      // Finally delete the hackathon
+      await tx.delete(hackathons)
+        .where(eq(hackathons.id, hackathonId));
+    });
+
+    // Revalidate cache
+    revalidatePath('/hackathons');
+    revalidateTag('hackathons');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete hackathon:', error);
+    return { success: false, error: 'Failed to delete hackathon' };
   }
 }
