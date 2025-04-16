@@ -69,6 +69,9 @@ export default async function HackathonTeamsPage({ params }: { params: Promise<{
               <h1 className="text-3xl font-bold mb-2">{hackathon.name} Teams</h1>
               <p className="text-white/80">
                 Browse participating teams or create your own
+                {hackathon.maxTeams && (
+                  <> • {teams.length} of {hackathon.maxTeams} teams registered</>
+                )}
               </p>
             </div>
             <Button variant="secondary" asChild>

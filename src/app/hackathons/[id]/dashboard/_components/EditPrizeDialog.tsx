@@ -38,8 +38,8 @@ export function EditPrizeDialog({ prize, hackathonId }: EditPrizeDialogProps) {
         </DialogHeader>
         <div className="pt-4">
           <PrizeForm 
-            hackathonId={hackathonId} 
-            prize={prize} 
+            initialData={prize} 
+            onSuccess={() => setIsOpen(false)} 
           />
         </div>
       </DialogContent>

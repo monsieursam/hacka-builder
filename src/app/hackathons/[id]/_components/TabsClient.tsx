@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Track, Hackathon, Team } from '@/db/schema';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 // Format date for display
 const formatDate = (date: Date) => {
@@ -45,77 +45,51 @@ type TabsClientProps = {
 };
 
 export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
-  const [activeTab, setActiveTab] = useState('overview');
-
   return (
-    <>
+    <Tabs defaultValue="overview" className="w-full">
       {/* Navigation Tabs */}
-      <div className="flex border-b mb-8 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'overview'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+      <TabsList className="w-full overflow-x-auto mb-8 border-b bg-transparent h-auto p-0 rounded-none">
+        <TabsTrigger 
+          value="overview"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Overview
-        </button>
-        <button
-          onClick={() => setActiveTab('teams')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'teams'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+        </TabsTrigger>
+        <TabsTrigger 
+          value="teams"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Teams
-        </button>
-        <button
-          onClick={() => setActiveTab('tracks')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'tracks'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+        </TabsTrigger>
+        <TabsTrigger 
+          value="tracks"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Tracks
-        </button>
-        <button
-          onClick={() => setActiveTab('prizes')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'prizes'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+        </TabsTrigger>
+        <TabsTrigger 
+          value="prizes"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Prizes
-        </button>
-        <button
-          onClick={() => setActiveTab('resources')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'resources'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+        </TabsTrigger>
+        <TabsTrigger 
+          value="resources"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Resources
-        </button>
-        <button
-          onClick={() => setActiveTab('rules')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'rules'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
+        </TabsTrigger>
+        <TabsTrigger 
+          value="rules"
+          className="rounded-none border-0 data-[state=active]:border-b-2 data-[state=active]:border-purple-600 data-[state=active]:text-purple-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none text-gray-600 hover:text-purple-600"
         >
           Rules
-        </button>
-      </div>
+        </TabsTrigger>
+      </TabsList>
 
       {/* Tab Content */}
       <div className="mb-8">
-        {activeTab === 'overview' && (
+        <TabsContent value="overview">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2">
               <h2 className="text-2xl font-bold mb-4">About the Hackathon</h2>
@@ -190,19 +164,34 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                       </div>
                     </li>
                   )}
+                  {hackathon.maxTeams && (
+                    <li className="flex items-start gap-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-600 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <div>
+                        <p className="font-medium">Team Limit</p>
+                        <p className="text-gray-600">Maximum of {hackathon.maxTeams} teams</p>
+                      </div>
+                    </li>
+                  )}
                 </ul>
               </Card>
             </div>
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'teams' && (
+        <TabsContent value="teams">
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Participating Teams</h2>
-              <Button asChild>
-                <Link href={`/hackathons/${hackathon.id}/teams/new`}>Create Team</Link>
-              </Button>
+              <div>
+                <h2 className="text-2xl font-bold">Participating Teams</h2>
+                {hackathon.maxTeams && (
+                  <p className="text-gray-600 mt-1">
+                    {teams.length} of {hackathon.maxTeams} teams registered
+                  </p>
+                )}
+              </div>
             </div>
             
             {teams.length > 0 ? (
@@ -232,11 +221,6 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                           View Team
                         </Link>
                       </Button>
-                      <Button variant="outline" className="w-full" size="sm" asChild>
-                        <Link href={`/hackathons/${hackathon.id}/dashboard`}>
-                          Dashboard
-                        </Link>
-                      </Button>
                     </div>
                   </Card>
                 ))}
@@ -251,9 +235,9 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'tracks' && (
+        <TabsContent value="tracks">
           <div>
             <h2 className="text-2xl font-bold mb-6">Hackathon Tracks</h2>
             
@@ -273,16 +257,16 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'prizes' && (
+        <TabsContent value="prizes">
           <div>
             <h2 className="text-2xl font-bold mb-6">Prizes & Rewards</h2>
             
             {hackathon.prizes && hackathon.prizes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {hackathon.prizes.map((prize, index: number) => (
-                  <Card key={index} className="p-6 hover:shadow-md transition-shadow">
+                  <Card key={prize.id || index} className="p-6 hover:shadow-md transition-shadow">
                     <div className="text-center">
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 text-purple-600 font-bold text-xl mb-4">
                         {prize.rank || index + 1}
@@ -300,9 +284,9 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               </div>
             )}
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'resources' && (
+        <TabsContent value="resources">
           <div>
             <h2 className="text-2xl font-bold mb-6">Hackathon Resources</h2>
             
@@ -428,9 +412,9 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               </Card>
             </div>
           </div>
-        )}
+        </TabsContent>
 
-        {activeTab === 'rules' && (
+        <TabsContent value="rules">
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">Hackathon Rules</h2>
@@ -459,8 +443,8 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
               )}
             </Card>
           </div>
-        )}
+        </TabsContent>
       </div>
-    </>
+    </Tabs>
   );
 } 

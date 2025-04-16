@@ -4,11 +4,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
-import { PrizeForm } from '../../_components/PrizeForm';
-import { EditPrizeDialog } from '../../_components/EditPrizeDialog';
+import { PrizeForm } from '../_components/PrizeForm';
+import { EditPrizeDialog } from '../_components/EditPrizeDialog';
 import { Trophy, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deletePrize } from '@/actions/prizes';
+import { DeletePrizeButton } from '../_components/DeletePrizeButton';
 
 export default async function PrizesPage({ 
   params 
@@ -68,21 +69,7 @@ export default async function PrizesPage({
                     </div>
                     <div className="flex items-start gap-2">
                       <EditPrizeDialog prize={prize} hackathonId={hackathon.id} />
-                      <button 
-                        onClick={async () => {
-                          if (confirm("Are you sure you want to delete this prize?")) {
-                            const result = await deletePrize(prize.id);
-                            if (result.success) {
-                              toast.success("Prize deleted successfully");
-                            } else {
-                              toast.error(result.error || "Failed to delete prize");
-                            }
-                          }
-                        }}
-                        className="p-1 text-gray-500 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <DeletePrizeButton prizeId={prize.id} />
                     </div>
                   </div>
                 </Card>
@@ -100,7 +87,7 @@ export default async function PrizesPage({
         <div>
           <Card className="p-6">
             <h3 className="text-lg font-semibold mb-4">Add a New Prize</h3>
-            <PrizeForm hackathonId={hackathon.id} />
+            <PrizeForm initialData={null} />
           </Card>
         </div>
       </div>
