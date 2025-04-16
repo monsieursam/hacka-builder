@@ -30,12 +30,12 @@ export default async function HackathonDashboard({
   params,
   searchParams
 }: { 
-  params: { id: string };
-  searchParams: { error?: string }
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>
 }) {
-  const { id: hackathonId } = params;
+  const { id: hackathonId } = await params;
   const { userId } = await auth();
-  const errorMessage = searchParams.error;
+  const {error: errorMessage} = await searchParams;
   
   if (!userId) {
     redirect('/sign-in');

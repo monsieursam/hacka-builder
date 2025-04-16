@@ -12,6 +12,8 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
+import { auth } from '@clerk/nextjs/server';
+import TeamsTable from './_components/TeamsTable';
 
 export default async function HackathonTeamsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: hackathonId } = await params;
@@ -23,6 +25,10 @@ export default async function HackathonTeamsPage({ params }: { params: Promise<{
   }
   
   const teams = await getTeamsByHackathonIdCached(hackathonId);
+  
+  // Check if current user is the organizer
+  const { userId } = await auth();
+  const isOrganizer = userId === hackathon.organizerId;
   
   return (
     <main className="pb-12">
@@ -75,36 +81,7 @@ export default async function HackathonTeamsPage({ params }: { params: Promise<{
       {/* Team Listing */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {teams.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map(team => (
-              <Card key={team.id} className="p-6 hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold mb-2">{team.name}</h3>
-                {team.projectName && (
-                  <p className="text-sm font-medium text-purple-600 mb-2">Project: {team.projectName}</p>
-                )}
-                <p className="text-gray-600 mb-4">{team.description}</p>
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <span className="text-gray-600">{team.members} members</span>
-                  </div>
-                  <span className={`px-2 py-1 text-xs rounded-full ${team.lookingForMembers ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                    {team.lookingForMembers ? 'Recruiting' : 'Team Full'}
-                  </span>
-                </div>
-                <Separator className="my-4" />
-                <div className="flex gap-2">
-                  <Button variant="default" className="w-full" size="sm" asChild>
-                    <Link href={`/hackathons/${hackathon.id}/teams/${team.id}`}>
-                      View Details
-                    </Link>
-                  </Button>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <TeamsTable teams={teams} hackathonId={hackathonId} isOrganizer={isOrganizer} />
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <h3 className="text-xl font-medium text-gray-600 mb-2">No teams yet</h3>

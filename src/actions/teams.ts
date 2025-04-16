@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { teams, teamMembers, hackathons } from '@/db/schema';
+import { teams, teamMembers, hackathons, submissions, teamInvitations, externalTeamMembers } from '@/db/schema';
 import { eq, and, sql, countDistinct, count } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
@@ -375,6 +375,270 @@ async function checkIfUserIsOrganizer(userId: string, hackathonId: string) {
     return hackathon?.organizerId === userId;
   } catch (error) {
     console.error('Error checking organizer status:', error);
+    return false;
+  }
+}
+
+/**
+ * Remove a team from a hackathon (organizer only)
+ */
+export async function removeTeam(teamId: string, hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Verify the hackathon exists
+    const hackathon = await getHackathonById(hackathonId);
+    if (!hackathon) {
+      return { success: false, error: 'Hackathon not found' };
+    }
+
+    // Check if the user is the organizer of the hackathon
+    const isOrganizer = hackathon.organizerId === userId;
+    if (!isOrganizer) {
+      return { success: false, error: 'Only the hackathon organizer can remove teams' };
+    }
+
+    // Verify the team exists and belongs to this hackathon
+    const team = await db.query.teams.findFirst({
+      where: and(
+        eq(teams.id, teamId),
+        eq(teams.hackathonId, hackathonId)
+      )
+    });
+
+    if (!team) {
+      return { success: false, error: 'Team not found or does not belong to this hackathon' };
+    }
+
+    // Begin a transaction to delete the team and related records
+    await db.transaction(async (tx) => {
+      // First delete submissions for this team
+      await tx.delete(submissions)
+        .where(eq(submissions.teamId, teamId));
+
+      // Delete team members
+      await tx.delete(teamMembers)
+        .where(eq(teamMembers.teamId, teamId));
+
+      // Delete the team
+      await tx.delete(teams)
+        .where(eq(teams.id, teamId));
+    });
+
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${hackathonId}/teams`);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error removing team:', error);
+    return { success: false, error: 'Failed to remove team' };
+  }
+}
+
+// Schema for validating team member invitation
+const inviteTeamMemberSchema = z.object({
+  teamId: z.string().uuid(),
+  hackathonId: z.string().uuid(),
+  email: z.string().email({ message: "Please provide a valid email address" }),
+});
+
+// Schema for adding team member by name
+const addTeamMemberByNameSchema = z.object({
+  teamId: z.string().uuid(),
+  hackathonId: z.string().uuid(),
+  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
+});
+
+/**
+ * Invite a team member via email
+ */
+export async function inviteTeamMember(data: z.infer<typeof inviteTeamMemberSchema>) {
+  try {
+    // Validate input
+    const { teamId, hackathonId, email } = inviteTeamMemberSchema.parse(data);
+    
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    // Get the team to verify it exists and check permissions
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    
+    // Verify the team belongs to the correct hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+    
+    // Check if the current user is authorized to invite (team owner or hackathon organizer)
+    const isAuthorized = await isTeamOwnerOrHackathonOrganizer(userId, teamId, hackathonId);
+    if (!isAuthorized) {
+      return { success: false, error: 'You are not authorized to invite members to this team' };
+    }
+    
+    // Check if the team is already at max capacity
+    const hackathon = await getHackathonById(hackathonId);
+    if (!hackathon) {
+      return { success: false, error: 'Hackathon not found' };
+    }
+    
+    const currentMembers = await db.query.teamMembers.findMany({
+      where: eq(teamMembers.teamId, teamId)
+    });
+    
+    if (currentMembers.length >= hackathon.maxTeamSize) {
+      return { success: false, error: 'Team is already at maximum capacity' };
+    }
+    
+    // Find user by email
+    const userToInvite = await db.query.users.findFirst({
+      where: eq(users.email, email)
+    });
+    
+    if (!userToInvite) {
+      return { success: false, error: 'User with this email not found. They need to register first.' };
+    }
+    
+    // Check if the user is already on a team for this hackathon
+    const existingTeam = await getUserTeamForHackathon(userToInvite.id, hackathonId);
+    if (existingTeam) {
+      return { success: false, error: 'This user is already part of a team for this hackathon' };
+    }
+    
+    // Check if the user is already invited to this team
+    const existingInvitation = await db.query.teamInvitations.findFirst({
+      where: and(
+        eq(teamInvitations.teamId, teamId),
+        eq(teamInvitations.email, email),
+        eq(teamInvitations.status, 'pending')
+      )
+    });
+    
+    if (existingInvitation) {
+      return { success: false, error: 'This user has already been invited to this team' };
+    }
+    
+    // Create invitation
+    await db.insert(teamInvitations).values({
+      teamId,
+      email,
+      invitedById: userId,
+      status: 'pending',
+    });
+    
+    // TODO: Send email notification
+    
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}/teams/${teamId}`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error inviting team member:', error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message };
+    }
+    return { success: false, error: 'Failed to invite team member' };
+  }
+}
+
+/**
+ * Add a team member by name only (no account required)
+ */
+export async function addTeamMemberByName(data: z.infer<typeof addTeamMemberByNameSchema>) {
+  try {
+    // Validate input
+    const { teamId, hackathonId, name } = addTeamMemberByNameSchema.parse(data);
+    
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    
+    // Get the team to verify it exists and check permissions
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+    
+    // Verify the team belongs to the correct hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+    
+    // Check if the current user is authorized to invite (team owner or hackathon organizer)
+    const isAuthorized = await isTeamOwnerOrHackathonOrganizer(userId, teamId, hackathonId);
+    if (!isAuthorized) {
+      return { success: false, error: 'You are not authorized to add members to this team' };
+    }
+    
+    // Check if the team is already at max capacity
+    const hackathon = await getHackathonById(hackathonId);
+    if (!hackathon) {
+      return { success: false, error: 'Hackathon not found' };
+    }
+    
+    const currentMembers = await db.query.teamMembers.findMany({
+      where: eq(teamMembers.teamId, teamId)
+    });
+    
+    if (currentMembers.length >= hackathon.maxTeamSize) {
+      return { success: false, error: 'Team is already at maximum capacity' };
+    }
+    
+    // Create external team member record
+    await db.insert(externalTeamMembers).values({
+      teamId,
+      name,
+      addedById: userId,
+    });
+    
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}/teams/${teamId}`);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error adding team member by name:', error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message };
+    }
+    return { success: false, error: 'Failed to add team member' };
+  }
+}
+
+/**
+ * Check if a user is a team owner or hackathon organizer
+ */
+async function isTeamOwnerOrHackathonOrganizer(userId: string, teamId: string, hackathonId: string): Promise<boolean> {
+  try {
+    // Check if user is team owner
+    const teamMember = await db.query.teamMembers.findFirst({
+      where: and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.role, 'owner')
+      )
+    });
+    
+    if (teamMember) {
+      return true;
+    }
+    
+    // Check if user is hackathon organizer
+    const hackathon = await getHackathonById(hackathonId);
+    return hackathon?.organizerId === userId;
+  } catch (error) {
+    console.error('Error checking permissions:', error);
     return false;
   }
 } 
