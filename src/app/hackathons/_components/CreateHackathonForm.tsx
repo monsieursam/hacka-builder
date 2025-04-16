@@ -330,7 +330,10 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? 'Creating...' : 'Create Hackathon'}
+          {isPending 
+            ? (isEditing ? 'Saving...' : 'Creating...') 
+            : (isEditing ? 'Save Changes' : 'Create Hackathon')
+          }
         </Button>
       </div>
     </form>
