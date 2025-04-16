@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { hackathonStatusEnum, Hackathon } from '@/db/schema';
-import { createHackathon, updateHackathon } from '@/actions/hackathon';
+import { createHackathon, updateHackathon, HackathonFormData } from '@/actions/hackathon';
 import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
 
 interface CreateHackathonFormProps {
   userId: string;
@@ -30,6 +31,7 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
     maxTeamSize: 5,
     minTeamSize: 1,
     maxParticipants: 0,
+    maxTeams: 0,
     status: 'draft',
     registrationStatus: 'closed',
   });
@@ -47,6 +49,7 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
         maxTeamSize: hackathon.maxTeamSize,
         minTeamSize: hackathon.minTeamSize,
         maxParticipants: hackathon.maxParticipants || 0,
+        maxTeams: hackathon.maxTeams || 0,
         status: hackathon.status,
         registrationStatus: hackathon.registrationStatus,
       });
@@ -99,23 +102,23 @@ export function CreateHackathonForm({ userId, hackathon, isEditing = false }: Cr
 
     startTransition(async () => {
       try {
+        const hackathonData = {
+          ...formData,
+          startDate,
+          endDate,
+        };
+
         if (isEditing && hackathon) {
           // Update existing hackathon
-          const updatedHackathon = await updateHackathon(hackathon.id, {
-            ...formData,
-            startDate,
-            endDate,
-          });
+          const updatedHackathon = await updateHackathon(hackathon.id, hackathonData);
           
           toast.success('Hackathon updated successfully!');
           router.push(`/hackathons/${updatedHackathon.id}`);
         } else {
           // Create new hackathon
           const newHackathon = await createHackathon({
-            ...formData,
+            ...hackathonData,
             organizerId: userId,
-            startDate,
-            endDate,
           });
           
           toast.success('Hackathon created successfully!');

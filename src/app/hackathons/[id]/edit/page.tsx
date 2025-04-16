@@ -14,7 +14,7 @@ import {
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
 
-export default async function EditHackathonPage({ params }: { params: { id: string } }) {
+export default async function EditHackathonPage({ params }: { params: Promise<{ id: string }> }) {
   // Get current user
   const { userId } = await auth();
   
@@ -23,7 +23,7 @@ export default async function EditHackathonPage({ params }: { params: { id: stri
     redirect("/sign-in");
   }
 
-  const hackathonId = params.id;
+  const {id: hackathonId} = await params;
   
   if (!hackathonId) {
     notFound();

@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Track } from '@/db/schema';
-import { HackathonWithOrganizer, TeamWithMemberCount } from '../page';
+import { Track, Hackathon, Team } from '@/db/schema';
 
 // Format date for display
 const formatDate = (date: Date) => {
@@ -16,6 +15,27 @@ const formatDate = (date: Date) => {
     month: 'long',
     day: 'numeric',
   });
+};
+
+// Define the types used in the component
+type HackathonWithOrganizer = Hackathon & {
+  organizer?: {
+    id: string;
+    name: string;
+    image_url?: string;
+  };
+  prizes?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    value?: number;
+    currency?: string;
+    rank?: number;
+  }>;
+};
+
+type TeamWithMemberCount = Team & {
+  members: number;
 };
 
 type TabsClientProps = {
@@ -80,6 +100,16 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
           }`}
         >
           Rules
+        </button>
+        <button
+          onClick={() => setActiveTab('submissions')}
+          className={`px-4 py-2 font-medium ${
+            activeTab === 'submissions'
+              ? 'border-b-2 border-purple-600 text-purple-600'
+              : 'text-gray-600 hover:text-purple-600'
+          }`}
+        >
+          Submissions
         </button>
       </div>
 
@@ -196,11 +226,18 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                       </span>
                     </div>
                     <Separator className="my-4" />
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href={`/hackathons/${hackathon.id}/teams/${team.id}`}>
-                        View Team
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="w-full" size="sm" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/teams/${team.id}`}>
+                          View Team
+                        </Link>
+                      </Button>
+                      <Button variant="outline" className="w-full" size="sm" asChild>
+                        <Link href={`/hackathons/${hackathon.id}/dashboard`}>
+                          Dashboard
+                        </Link>
+                      </Button>
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -244,7 +281,7 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
             
             {hackathon.prizes && hackathon.prizes.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {hackathon.prizes.map((prize, index) => (
+                {hackathon.prizes.map((prize, index: number) => (
                   <Card key={index} className="p-6 hover:shadow-md transition-shadow">
                     <div className="text-center">
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-purple-100 text-purple-600 font-bold text-xl mb-4">
@@ -267,18 +304,63 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
 
         {activeTab === 'rules' && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">Hackathon Rules</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Hackathon Rules</h2>
+              <Link href={`/hackathons/${hackathon.id}/rules`}>
+                <Button>
+                  {hackathon.rules ? 'Edit Rules' : 'Create Rules'}
+                </Button>
+              </Link>
+            </div>
             
-            {hackathon.rules ? (
-              <div className="prose prose-purple max-w-none">
-                <p className="whitespace-pre-line">{hackathon.rules}</p>
+            <Card className="p-6">
+              {hackathon.rules ? (
+                <div className="prose dark:prose-invert max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: hackathon.rules.replace(/\n/g, '<br />') }} />
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <h3 className="text-xl font-medium text-gray-600 mb-2">No rules defined yet</h3>
+                  <p className="text-gray-500 mb-6">
+                    Define the rules and guidelines for participants to follow during the hackathon.
+                  </p>
+                  <Link href={`/hackathons/${hackathon.id}/rules`}>
+                    <Button>Create Rules</Button>
+                  </Link>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'submissions' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Project Submissions</h2>
+              <div className="flex gap-2">
+                <Button asChild>
+                  <Link href={`/hackathons/${hackathon.id}/submissions`}>View All Submissions</Link>
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href={`/hackathons/${hackathon.id}/submit`}>Submit Project</Link>
+                </Button>
               </div>
-            ) : (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <h3 className="text-xl font-medium text-gray-600">No rules specified</h3>
-                <p className="text-gray-500">Rules information will be announced soon</p>
-              </div>
-            )}
+            </div>
+            
+            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h3 className="text-xl font-medium text-gray-600 dark:text-gray-300 mb-2">
+                Submit Your Project
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-xl mx-auto">
+                Ready to showcase your work? Submit your project with a GitHub link, 
+                project details, and optional demo URL.
+              </p>
+              <Button asChild size="lg">
+                <Link href={`/hackathons/${hackathon.id}/submit`}>
+                  Submit Your Project
+                </Link>
+              </Button>
+            </div>
           </div>
         )}
       </div>

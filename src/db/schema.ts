@@ -29,6 +29,7 @@ export const hackathons = pgTable('hackathons', {
   maxTeamSize: integer('max_team_size').default(5).notNull(),
   minTeamSize: integer('min_team_size').default(1).notNull(),
   maxParticipants: integer('max_participants'),
+  maxTeams: integer('max_teams'),
   banner: text('banner'),
   logo: text('logo'),
   theme: text('theme'),

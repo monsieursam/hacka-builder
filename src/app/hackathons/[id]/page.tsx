@@ -139,21 +139,20 @@ export default async function HackathonPage({ params }: { params: Promise<{ id: 
         {/* Action Buttons */}
         <div className="flex flex-wrap gap-4 mb-8 justify-center md:justify-end">
           {isOrganizer && (
-            <Button size="lg" variant="default" asChild>
-              <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
-            </Button>
+            <>
+              <Button size="lg" variant="default" asChild>
+                <Link href={`/hackathons/${hackathon.id}/dashboard`}>Dashboard</Link>
+              </Button>
+              <Button size="lg" variant="default" asChild>
+                <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
+              </Button>
+            </>
           )}
           {hackathon.registrationStatus === 'open' && (
             <Button size="lg" asChild>
-              <Link href={`/hackathons/${hackathon.id}/register`}>Register Now</Link>
+              <Link href={`/hackathons/${hackathon.id}/dashboard`}>Register</Link>
             </Button>
           )}
-          <Button size="lg" variant="outline" asChild>
-            <Link href={`/hackathons/${hackathon.id}/teams/new`}>Create Team</Link>
-          </Button>
-          <Button size="lg" variant="outline" asChild>
-            <Link href={`/hackathons/${hackathon.id}/teams`}>Browse Teams</Link>
-          </Button>
         </div>
 
         {/* Pass data to client component for tabs */}
