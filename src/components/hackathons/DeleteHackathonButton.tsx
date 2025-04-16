@@ -10,9 +10,10 @@ import { Trash2 } from 'lucide-react';
 interface DeleteHackathonButtonProps {
   hackathonId: string;
   hackathonName: string;
+  className?: string;
 }
 
-export function DeleteHackathonButton({ hackathonId, hackathonName }: DeleteHackathonButtonProps) {
+export function DeleteHackathonButton({ hackathonId, hackathonName, className }: DeleteHackathonButtonProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -44,6 +45,7 @@ export function DeleteHackathonButton({ hackathonId, hackathonName }: DeleteHack
         variant="destructive" 
         size="lg" 
         onClick={() => setShowConfirmation(true)}
+        className={className}
       >
         <Trash2 className="h-4 w-4 mr-2" />
         Delete Hackathon

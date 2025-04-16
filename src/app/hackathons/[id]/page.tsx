@@ -12,7 +12,6 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
-import { DeleteHackathonButton } from '@/components/hackathons/DeleteHackathonButton';
 
 // Client components for interactive tabs
 
@@ -147,10 +146,6 @@ export default async function HackathonPage({ params }: { params: Promise<{ id: 
               <Button size="lg" variant="default" asChild>
                 <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
               </Button>
-              <DeleteHackathonButton 
-                hackathonId={hackathon.id} 
-                hackathonName={hackathon.name} 
-              />
             </>
           )}
           {hackathon.registrationStatus === 'open' && (

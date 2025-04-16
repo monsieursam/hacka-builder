@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq, or, like, and, desc } from 'drizzle-orm';
 import { cache } from 'react';
+import { hackathons, teams, teamMembers } from '@/db/schema';
 
 /**
  * Search for users by name or email
@@ -80,4 +81,57 @@ export async function getUserByEmail(email: string) {
 }
 
 // Cached version of getUserById for repeated calls
-export const getUserByIdCached = cache(getUserById); 
+export const getUserByIdCached = cache(getUserById);
+
+/**
+ * Get hackathons organized by a user
+ * @param userId The user's ID
+ * @returns List of hackathons
+ */
+export async function getHackathonsOrganizedByUser(userId: string) {
+  try {
+    const organizedHackathons = await db.query.hackathons.findMany({
+      where: eq(hackathons.organizerId, userId),
+      orderBy: (hackathons, { desc }) => [desc(hackathons.startDate)],
+      with: {
+        organizer: true
+      }
+    });
+    
+    return organizedHackathons;
+  } catch (error) {
+    console.error('Error getting organized hackathons:', error);
+    return [];
+  }
+}
+
+/**
+ * Get hackathons a user is participating in
+ * @param userId The user's ID
+ * @returns List of hackathons with team information
+ */
+export async function getHackathonsParticipatedByUser(userId: string) {
+  try {
+    const participatingQuery = await db
+      .select({
+        hackathon: hackathons,
+        teamName: teams.name,
+        teamId: teams.id
+      })
+      .from(teamMembers)
+      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .innerJoin(hackathons, eq(teams.hackathonId, hackathons.id))
+      .where(eq(teamMembers.userId, userId));
+    
+    const participatingHackathons = participatingQuery.map(record => ({
+      ...record.hackathon,
+      teamName: record.teamName,
+      teamId: record.teamId
+    }));
+    
+    return participatingHackathons;
+  } catch (error) {
+    console.error('Error getting participating hackathons:', error);
+    return [];
+  }
+} 

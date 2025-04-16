@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
-import { getTeamById } from '@/actions/teams';
+import { getTeamById, getTeamWithMembers } from '@/actions/teams';
 import { 
   Breadcrumb, 
   BreadcrumbItem, 
@@ -14,15 +14,23 @@ import {
   BreadcrumbPage, 
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserRound } from 'lucide-react';
+import { db } from '@/db';
+import { teamMembers } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 
 // Define types for team members
 interface TeamMember {
   id: string;
   userId: string;
   role: string;
-  name: string;
-  email: string;
-  imageUrl: string | null;
+  user?: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string;
+    image_url?: string | null;
+  } | null;
 }
 
 interface TeamWithMembers {
@@ -39,29 +47,18 @@ interface TeamWithMembers {
 }
 
 async function getTeamDetails(teamId: string): Promise<TeamWithMembers | null> {
-  // This would be replaced with a real function to get team details with members
-  // For now we'll return a placeholder
-  const team = await getTeamById(teamId);
-  if (!team) return null;
-
-  return {
-    ...team,
-    members: team.members || 1, // Fallback
-    teamMembers: [
-      { 
-        id: '1',
-        userId: team.id, 
-        role: 'owner',
-        name: 'Team Owner',
-        email: 'owner@example.com',
-        imageUrl: null
-      }
-    ]
-  };
+  // Use the server function to get team with members
+  const teamWithMembers = await getTeamWithMembers(teamId);
+  
+  if (!teamWithMembers) {
+    return null;
+  }
+  
+  return teamWithMembers as TeamWithMembers;
 }
 
 export default async function TeamDetailsPage({ params }: { params: { id: string, teamId: string } }) {
-  const { id: hackathonId, teamId } = params;
+  const { id: hackathonId, teamId } = await params;
   const { userId } = await auth();
   
   const hackathon = await getHackathonByIdCached(hackathonId);
@@ -174,25 +171,39 @@ export default async function TeamDetailsPage({ params }: { params: { id: string
             
             <Card className="p-6">
               <h2 className="text-xl font-bold mb-4">Team Members</h2>
-              <div className="space-y-4">
-                {team.teamMembers.map(member => (
-                  <div key={member.id} className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                      {member.imageUrl ? (
-                        <img src={member.imageUrl} alt={member.name} className="w-10 h-10 rounded-full" />
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-semibold">{member.name}</p>
-                      <p className="text-sm text-gray-500 capitalize">{member.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              
+              {team.teamMembers && team.teamMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {team.teamMembers.map(member => (
+                    <Card key={member.id} className="p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage 
+                          src={member.user?.image_url || ""} 
+                          alt={`${member.user?.first_name || ''} ${member.user?.last_name || ''}`} 
+                        />
+                        <AvatarFallback>
+                          <UserRound className="h-6 w-6" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">
+                          {member.user?.first_name} {member.user?.last_name}
+                          {member.role === 'owner' && (
+                            <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
+                              Owner
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-sm text-gray-500">{member.user?.email}</p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500">No team members found</p>
+                </div>
+              )}
             </Card>
           </div>
           

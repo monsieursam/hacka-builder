@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { teams, teamMembers, hackathons, submissions, teamInvitations, externalTeamMembers } from '@/db/schema';
+import { teams, teamMembers, hackathons, submissions, teamInvitations, externalTeamMembers, users } from '@/db/schema';
 import { eq, and, sql, countDistinct, count } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import { z } from 'zod';
@@ -640,5 +640,90 @@ async function isTeamOwnerOrHackathonOrganizer(userId: string, teamId: string, h
   } catch (error) {
     console.error('Error checking permissions:', error);
     return false;
+  }
+}
+
+/**
+ * Get a user's team with team members for a specific hackathon
+ * @param userId The user's ID
+ * @param hackathonId The hackathon ID
+ * @returns The team with members and their details or null if the user is not on a team
+ */
+export async function getUserTeamWithMembersForHackathon(userId: string, hackathonId: string) {
+  try {
+    // Find team ID for the user in this hackathon
+    const result = await db
+      .select({
+        team: teams,
+        members: countDistinct(teamMembers.userId).as('members')
+      })
+      .from(teams)
+      .innerJoin(teamMembers, eq(teams.id, teamMembers.teamId))
+      .where(
+        and(
+          eq(teams.hackathonId, hackathonId),
+          eq(teamMembers.userId, userId)
+        )
+      )
+      .groupBy(teams.id);
+      
+    if (result.length === 0) {
+      return null;
+    }
+    
+    const team = result[0].team;
+    
+    // Fetch team members with user info
+    const teamMembersWithUsers = await db
+      .select({
+        id: teamMembers.id,
+        userId: teamMembers.userId,
+        role: teamMembers.role,
+        user: users
+      })
+      .from(teamMembers)
+      .leftJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, team.id));
+    
+    return {
+      ...team,
+      members: Number(result[0].members),
+      teamMembers: teamMembersWithUsers
+    };
+  } catch (error) {
+    console.error(`Failed to fetch team for user ${userId} in hackathon ${hackathonId}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Get a team with its members data
+ * @param teamId The team ID
+ * @returns The team with members data or null if not found
+ */
+export async function getTeamWithMembers(teamId: string) {
+  try {
+    const team = await getTeamById(teamId);
+    if (!team) return null;
+    
+    // Fetch team members with user info
+    const teamMembersWithUsers = await db
+      .select({
+        id: teamMembers.id,
+        userId: teamMembers.userId,
+        role: teamMembers.role,
+        user: users
+      })
+      .from(teamMembers)
+      .leftJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, teamId));
+    
+    return {
+      ...team,
+      teamMembers: teamMembersWithUsers
+    };
+  } catch (error) {
+    console.error(`Failed to fetch team with members for team ${teamId}:`, error);
+    return null;
   }
 } 

@@ -101,16 +101,6 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
         >
           Rules
         </button>
-        <button
-          onClick={() => setActiveTab('submissions')}
-          className={`px-4 py-2 font-medium ${
-            activeTab === 'submissions'
-              ? 'border-b-2 border-purple-600 text-purple-600'
-              : 'text-gray-600 hover:text-purple-600'
-          }`}
-        >
-          Submissions
-        </button>
       </div>
 
       {/* Tab Content */}
@@ -330,37 +320,6 @@ export function TabsClient({ hackathon, teams, tracks }: TabsClientProps) {
                 </div>
               )}
             </Card>
-          </div>
-        )}
-
-        {activeTab === 'submissions' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Project Submissions</h2>
-              <div className="flex gap-2">
-                <Button asChild>
-                  <Link href={`/hackathons/${hackathon.id}/submissions`}>View All Submissions</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link href={`/hackathons/${hackathon.id}/submit`}>Submit Project</Link>
-                </Button>
-              </div>
-            </div>
-            
-            <div className="text-center py-12 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h3 className="text-xl font-medium text-gray-600 dark:text-gray-300 mb-2">
-                Submit Your Project
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-xl mx-auto">
-                Ready to showcase your work? Submit your project with a GitHub link, 
-                project details, and optional demo URL.
-              </p>
-              <Button asChild size="lg">
-                <Link href={`/hackathons/${hackathon.id}/submit`}>
-                  Submit Your Project
-                </Link>
-              </Button>
-            </div>
           </div>
         )}
       </div>

@@ -6,6 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import type { Hackathon, Team, Submission, Track } from '@/db/schema';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserRound } from 'lucide-react';
 
 type HackathonWithOrganizer = Hackathon & {
   organizer?: {
@@ -17,6 +19,17 @@ type HackathonWithOrganizer = Hackathon & {
 
 type TeamWithMemberCount = Team & {
   members: number;
+  teamMembers?: Array<{
+    id: string;
+    userId: string;
+    role: string;
+    user?: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      image_url?: string;
+    };
+  }>;
 };
 
 type SubmissionWithDetails = Submission & {
@@ -480,14 +493,23 @@ export function DashboardTabs({
           </div>
         )}
 
-        {/* My Team tab content for participants */}
-        {activeTab === 'myteam' && !isOrganizer && userTeam && (
+        {/* My Team Tab - Only for participants */}
+        {activeTab === 'myteam' && userTeam && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">My Team: {userTeam.name}</h2>
-              <Button asChild variant="outline">
-                <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/edit`}>Edit Team</Link>
-              </Button>
+              <h2 className="text-2xl font-bold">Your Team</h2>
+              <div className="flex gap-2">
+                <Button variant="outline" asChild>
+                  <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/edit`}>
+                    Edit Team
+                  </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
+                    Invite Members
+                  </Link>
+                </Button>
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -520,63 +542,69 @@ export function DashboardTabs({
                   </div>
                 </Card>
                 
+                {/* Team Members Section */}
                 <Card className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold">Team Members</h3>
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
-                        Add Members
-                      </Link>
-                    </Button>
+                    <p className="text-sm text-gray-500">{userTeam.members}/{hackathon.maxTeamSize} members</p>
                   </div>
                   
-                  <div className="space-y-4">
-                    <p>Currently {userTeam.members} member{userTeam.members !== 1 ? 's' : ''}</p>
-                    <p className="text-sm text-gray-500">
-                      Maximum team size: {hackathon.maxTeamSize} members
-                    </p>
-                  </div>
+                  {userTeam.teamMembers && userTeam.teamMembers.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {userTeam.teamMembers.map(member => (
+                        <Card key={member.id} className="p-4 flex items-start gap-3 hover:shadow-md transition-shadow">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage 
+                              src={member.user?.image_url} 
+                              alt={`${member.user?.first_name || ''} ${member.user?.last_name || ''}`} 
+                            />
+                            <AvatarFallback>
+                              <UserRound className="h-6 w-6" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">
+                              {member.user?.first_name} {member.user?.last_name}
+                              {member.role === 'owner' && 
+                                <span className="ml-2 text-xs px-2 py-0.5 bg-purple-100 text-purple-800 rounded-full">
+                                  Owner
+                                </span>
+                              }
+                            </p>
+                            <p className="text-sm text-gray-500">{member.user?.email}</p>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 bg-gray-50 rounded-lg">
+                      <p className="text-gray-500">No team members found</p>
+                    </div>
+                  )}
                 </Card>
               </div>
               
-              {/* Side Content */}
+              {/* Sidebar */}
               <div className="space-y-6">
                 <Card className="p-6">
                   <h3 className="text-lg font-bold mb-4">Team Actions</h3>
                   <div className="space-y-3">
-                    <Button className="w-full" asChild>
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
+                        <UserRound className="mr-2 h-4 w-4" />
+                        Invite Team Members
+                      </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" asChild>
                       <Link href={`/hackathons/${hackathon.id}/dashboard/submit`}>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="17 8 12 3 7 8" />
+                          <line x1="12" y1="3" x2="12" y2="15" />
+                        </svg>
                         Submit Project
                       </Link>
                     </Button>
-                    
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/edit`}>
-                        Edit Team Details
-                      </Link>
-                    </Button>
-                    
-                    <Button variant="outline" className="w-full" asChild>
-                      <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
-                        Invite Members
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-                
-                <Card className="p-6">
-                  <h3 className="text-lg font-bold mb-4">Team Status</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Members:</span>
-                      <span className="font-medium">{userTeam.members} / {hackathon.maxTeamSize}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-purple-600 h-2 rounded-full" 
-                        style={{ width: `${(userTeam.members / hackathon.maxTeamSize) * 100}%` }}
-                      />
-                    </div>
                   </div>
                 </Card>
               </div>

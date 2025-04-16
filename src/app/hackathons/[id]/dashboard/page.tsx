@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached, getTeamsByHackathonIdCached, getSubmissionsByHackathonId } from '@/actions/hackathon';
-import { getUserTeamForHackathon } from '@/actions/teams';
+import { getUserTeamWithMembersForHackathon } from '@/actions/teams';
 import { 
   Breadcrumb, 
   BreadcrumbItem, 
@@ -15,6 +15,7 @@ import {
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
 import { DashboardTabs } from './_components/DashboardTabs';
+import { DeleteHackathonButton } from '@/components/hackathons/DeleteHackathonButton';
 
 // Format date for display
 const formatDate = (date: Date) => {
@@ -51,7 +52,7 @@ export default async function HackathonDashboard({
   const isOrganizer = userId === hackathon.organizerId;
   
   // Get the user's team for this hackathon if they're a participant
-  const userTeam = await getUserTeamForHackathon(userId, hackathonId);
+  const userTeam = await getUserTeamWithMembersForHackathon(userId, hackathonId);
   
   // If the user is not an organizer and not on a team, don't redirect anymore,
   // instead allow them to create a team from the dashboard
@@ -128,9 +129,16 @@ export default async function HackathonDashboard({
             </div>
             <div className="flex flex-wrap gap-3">
               {isOrganizer && (
-                <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
-                  <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
-                </Button>
+                <>
+                  <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
+                    <Link href={`/hackathons/${hackathon.id}/edit`}>Edit Hackathon</Link>
+                  </Button>
+                  <DeleteHackathonButton
+                    hackathonId={hackathon.id}
+                    hackathonName={hackathon.name}
+                    className="bg-red-500/60 hover:bg-red-600/80 border-transparent"
+                  />
+                </>
               )}
               <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/20" asChild>
                 <Link href={`/hackathons/${hackathon.id}`}>View Hackathon</Link>
