@@ -9,6 +9,7 @@ import { getHackathonByIdCached } from '@/actions/hackathon';
 import { getUserTeamWithMembersForHackathon } from '@/actions/teams';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RemoveMemberButton } from './_components/RemoveMemberButton';
+import { InviteLinkGenerator } from './_components/InviteLinkGenerator';
 
 export default async function MyTeamPage({ 
   params 
@@ -172,6 +173,14 @@ export default async function MyTeamPage({
               </Button>
             </div>
           </Card>
+          
+          {/* Team Invite Link */}
+          {isTeamOwner && (
+            <InviteLinkGenerator 
+              teamId={userTeam.id} 
+              hackathonId={hackathonId} 
+            />
+          )}
         </div>
       </div>
     </div>
