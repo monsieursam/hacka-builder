@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { TracksManager } from './_components/TracksManager';
 import { PartnersManager } from './_components/PartnersManager';
 import { AdvancedSettings } from './_components/AdvancedSettings';
-import { CreateHackathonForm } from '@/app/hackathons/_components/CreateHackathonForm';
+import { CreateHackathonForm } from '@/app/(home)/hackathons/_components/CreateHackathonForm';
 
 export default async function HackathonSettingsPage({ 
   params 
