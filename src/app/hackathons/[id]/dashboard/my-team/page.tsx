@@ -10,6 +10,7 @@ import { getUserTeamWithMembersForHackathon } from '@/actions/teams';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { RemoveMemberButton } from './_components/RemoveMemberButton';
 import { InviteLinkGenerator } from './_components/InviteLinkGenerator';
+import { EditTeamModal } from './_components/EditTeamModal';
 
 export default async function MyTeamPage({ 
   params 
@@ -55,16 +56,18 @@ export default async function MyTeamPage({
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Your Team</h2>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/edit`}>
-              Edit Team
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
-              Invite Members
-            </Link>
-          </Button>
+          {isTeamOwner && (
+            <EditTeamModal 
+              team={{
+                id: userTeam.id,
+                name: userTeam.name,
+                description: userTeam.description,
+                lookingForMembers: userTeam.lookingForMembers,
+                projectName: userTeam.projectName,
+              }}
+              hackathonId={hackathonId}
+            />
+          )}
         </div>
       </div>
       
@@ -111,7 +114,7 @@ export default async function MyTeamPage({
                   <Card key={member.id} className="p-4 flex items-start gap-3 hover:shadow-md transition-shadow relative">
                     <Avatar className="h-10 w-10">
                       <AvatarImage 
-                        src={member.user?.image_url} 
+                        src={member.user?.image_url || undefined} 
                         alt={`${member.user?.first_name || ''} ${member.user?.last_name || ''}`} 
                       />
                       <AvatarFallback>
@@ -152,27 +155,7 @@ export default async function MyTeamPage({
         
         {/* Sidebar */}
         <div className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-bold mb-4">Team Actions</h3>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href={`/hackathons/${hackathon.id}/teams/${userTeam.id}/invite`}>
-                  <UserRound className="mr-2 h-4 w-4" />
-                  Invite Team Members
-                </Link>
-              </Button>
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href={`/hackathons/${hackathon.id}/dashboard/submit`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  Submit Project
-                </Link>
-              </Button>
-            </div>
-          </Card>
+          
           
           {/* Team Invite Link */}
           {isTeamOwner && (

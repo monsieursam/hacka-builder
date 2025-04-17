@@ -210,6 +210,8 @@ export async function acceptJudgeInvitation(judgeId: string) {
     // Revalidate relevant paths
     revalidatePath(`/hackathons/${judge.hackathonId}/judges`);
     revalidatePath(`/hackathons/${judge.hackathonId}`);
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/invitations');
 
     return { 
       success: true, 
@@ -266,5 +268,52 @@ export async function getJudgesForHackathon(hackathonId: string) {
   } catch (error) {
     console.error('Error getting judges for hackathon:', error);
     return [];
+  }
+}
+
+/**
+ * Decline a judge invitation
+ */
+export async function declineJudgeInvitation(judgeId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Find the judge invitation
+    const judge = await db.query.judges.findFirst({
+      where: eq(judges.id, judgeId),
+      with: {
+        hackathon: true,
+      },
+    });
+
+    if (!judge) {
+      return { success: false, error: 'Invitation not found' };
+    }
+
+    // Check if the user is the invited judge
+    if (judge.userId !== userId) {
+      return { success: false, error: 'You are not authorized to decline this invitation' };
+    }
+
+    // Delete the judge entry
+    await db.delete(judges)
+      .where(eq(judges.id, judgeId));
+
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${judge.hackathonId}/judges`);
+    revalidatePath(`/hackathons/${judge.hackathonId}`);
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/invitations');
+
+    return { 
+      success: true
+    };
+  } catch (error) {
+    console.error('Error declining judge invitation:', error);
+    return { success: false, error: 'Failed to decline invitation' };
   }
 } 

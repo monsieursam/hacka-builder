@@ -117,7 +117,7 @@ export function JudgeList({ judges, hackathonId }: JudgeListProps) {
                   <Avatar>
                     <AvatarImage src={judge.user.imageUrl || ''} alt={judge.user.name} />
                     <AvatarFallback>
-                      {judge.user.name.charAt(0).toUpperCase()}
+                      {judge.user.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>

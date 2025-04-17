@@ -28,9 +28,9 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en">
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen`}>
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full`}>
           <MainNav />
-          <main>{children}</main>
+          <main className="w-full">{children}</main>
           <Toaster position="top-right" />
         </body>
       </html>

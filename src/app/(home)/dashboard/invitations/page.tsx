@@ -27,7 +27,7 @@ export default async function InvitationsPage() {
   const acceptedInvitations = judgeInvitations.filter(judge => judge.isAccepted);
   
   return (
-    <div className="container py-8">
+    <div className="p-8">
       <h1 className="text-3xl font-bold mb-8">My Invitations</h1>
       
       <Tabs defaultValue="pending" className="w-full">

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { acceptJudgeInvitation } from '@/actions/judges';
+import { acceptJudgeInvitation, declineJudgeInvitation } from '@/actions/judges';
 import { useRouter } from 'next/navigation';
 import { Calendar, MapPin } from 'lucide-react';
 
@@ -36,6 +36,7 @@ interface JudgeInvitationCardProps {
 export default function JudgeInvitationCard({ invitation }: JudgeInvitationCardProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeclineLoading, setIsDeclineLoading] = useState(false);
   
   const handleAccept = async () => {
     setIsLoading(true);
@@ -59,6 +60,32 @@ export default function JudgeInvitationCard({ invitation }: JudgeInvitationCardP
       console.error(error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    setIsDeclineLoading(true);
+    
+    try {
+      // Ask for confirmation before declining
+      if (!confirm('Are you sure you want to decline this invitation? This action cannot be undone.')) {
+        setIsDeclineLoading(false);
+        return;
+      }
+      
+      const result = await declineJudgeInvitation(invitation.id);
+      
+      if (result.success) {
+        toast.success('Invitation declined');
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Failed to decline invitation');
+      }
+    } catch (error) {
+      toast.error('An error occurred while declining the invitation');
+      console.error(error);
+    } finally {
+      setIsDeclineLoading(false);
     }
   };
   
@@ -100,10 +127,20 @@ export default function JudgeInvitationCard({ invitation }: JudgeInvitationCardP
       </CardContent>
       
       <CardFooter className="flex justify-end gap-2 pt-2 pb-4">
+        {!invitation.isAccepted && (
+          <Button 
+            variant="outline" 
+            onClick={handleDecline} 
+            disabled={isLoading || isDeclineLoading}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            {isDeclineLoading ? 'Declining...' : 'Decline'}
+          </Button>
+        )}
         <Button 
           variant="default" 
           onClick={handleAccept} 
-          disabled={invitation.isAccepted || isLoading}
+          disabled={invitation.isAccepted || isLoading || isDeclineLoading}
         >
           {isLoading ? 'Accepting...' : invitation.isAccepted ? 'Accepted' : 'Accept Invitation'}
         </Button>

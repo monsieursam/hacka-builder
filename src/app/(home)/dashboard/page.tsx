@@ -14,6 +14,7 @@ import { Plus, Bell } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { hackathons, teams, teamMembers } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import DashboardJudgeInvitationCard from './_components/DashboardJudgeInvitationCard';
 
 export default async function DashboardPage() {
   // Get current user
@@ -50,6 +51,7 @@ export default async function DashboardPage() {
   // Get pending judge invitations for the user
   const judgeInvitations = await getJudgeInvitationsForUser(userId);
   const pendingInvitations = judgeInvitations.filter(j => !j.isAccepted);
+
   
   // Format date for display
   const formatDate = (date: Date) => {
@@ -61,7 +63,7 @@ export default async function DashboardPage() {
   };
   
   return (
-    <div className="container py-8">
+    <div className="p-8">
       <div className="flex justify-between items-center mb-10">
         <h1 className="text-3xl font-bold">My Dashboard</h1>
         
@@ -71,16 +73,16 @@ export default async function DashboardPage() {
               <Plus className="mr-2 h-4 w-4" /> Create Hackathon
             </Link>
           </Button>
-          {pendingInvitations.length > 0 && (
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/invitations" className="relative">
-                <Bell className="mr-2 h-4 w-4" /> Invitations
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/invitations" className="relative">
+              <Bell className="mr-2 h-4 w-4" /> Invitations
+              {pendingInvitations.length > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {pendingInvitations.length}
                 </span>
-              </Link>
-            </Button>
-          )}
+              )}
+            </Link>
+          </Button>
         </div>
       </div>
       
@@ -117,7 +119,7 @@ export default async function DashboardPage() {
                   </span>
                 </div>
                 <Separator className="my-4" />
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-col">
                   <Button variant="outline" className="w-full" size="sm" asChild>
                     <Link href={`/hackathons/${hackathon.id}`}>
                       View
@@ -174,7 +176,7 @@ export default async function DashboardPage() {
                   </span>
                 </div>
                 <Separator className="my-4" />
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-col">
                   <Button variant="outline" className="w-full" size="sm" asChild>
                     <Link href={`/hackathons/${hackathon.id}`}>
                       View
@@ -196,6 +198,44 @@ export default async function DashboardPage() {
             <Button asChild>
               <Link href="/hackathons">Browse Hackathons</Link>
             </Button>
+          </div>
+        )}
+      </div>
+      
+      {/* Judge Invitations */}
+      <div className="mt-12">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Judge Invitations</h2>
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/invitations">View All</Link>
+          </Button>
+        </div>
+        
+        {pendingInvitations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {pendingInvitations.slice(0, 3).map(invitation => (
+              <DashboardJudgeInvitationCard 
+                key={invitation.id} 
+                invitation={invitation}
+              />
+            ))}
+            {pendingInvitations.length > 3 && (
+              <Card className="p-6 hover:shadow-md transition-shadow flex flex-col justify-center items-center">
+                <p className="text-lg font-medium text-gray-600 mb-4">
+                  +{pendingInvitations.length - 3} more invitations
+                </p>
+                <Button variant="outline" asChild>
+                  <Link href="/dashboard/invitations">
+                    View All Invitations
+                  </Link>
+                </Button>
+              </Card>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-gray-50 rounded-lg">
+            <h3 className="text-xl font-medium text-gray-600 mb-2">You don't have any judge invitations</h3>
+            <p className="text-gray-500">Judge invitations will appear here when hackathon organizers invite you.</p>
           </div>
         )}
       </div>

@@ -18,6 +18,16 @@ const createTeamSchema = z.object({
   hackathonId: z.string().uuid(),
 });
 
+// Schema for updating a team
+const updateTeamSchema = z.object({
+  teamId: z.string().uuid(),
+  hackathonId: z.string().uuid(),
+  name: z.string().min(3, { message: "Team name must be at least 3 characters" }),
+  description: z.string().optional(),
+  lookingForMembers: z.boolean().default(true),
+  projectName: z.string().optional(),
+});
+
 /**
  * Server action to create a new team for a hackathon
  */
@@ -1272,5 +1282,70 @@ export async function removeTeamMember(teamId: string, memberUserId: string, hac
   } catch (error) {
     console.error('Error removing team member:', error);
     return { success: false, error: 'Failed to remove team member' };
+  }
+}
+
+/**
+ * Update team details
+ */
+export async function updateTeam(formData: FormData) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Parse and validate form data
+    const rawData = {
+      teamId: formData.get('teamId') as string,
+      hackathonId: formData.get('hackathonId') as string,
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      lookingForMembers: formData.get('lookingForMembers') === 'true',
+      projectName: formData.get('projectName') as string,
+    };
+
+    const validatedData = updateTeamSchema.parse(rawData);
+
+    // Check if user is authorized to update the team (team owner or hackathon organizer)
+    const isAuthorized = await isTeamOwnerOrHackathonOrganizer(
+      userId, 
+      validatedData.teamId, 
+      validatedData.hackathonId
+    );
+
+    if (!isAuthorized) {
+      return { success: false, error: 'You are not authorized to update this team' };
+    }
+
+    // Update the team
+    const [updatedTeam] = await db.update(teams)
+      .set({
+        name: validatedData.name,
+        description: validatedData.description || null,
+        lookingForMembers: validatedData.lookingForMembers,
+        projectName: validatedData.projectName || null,
+      })
+      .where(eq(teams.id, validatedData.teamId))
+      .returning();
+
+    if (!updatedTeam) {
+      return { success: false, error: 'Failed to update team' };
+    }
+
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${validatedData.hackathonId}`);
+    revalidatePath(`/hackathons/${validatedData.hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${validatedData.hackathonId}/dashboard/my-team`);
+    revalidatePath(`/hackathons/${validatedData.hackathonId}/teams`);
+
+    return { success: true, team: updatedTeam };
+  } catch (error) {
+    console.error('Error updating team:', error);
+    if (error instanceof z.ZodError) {
+      return { success: false, error: error.errors[0].message };
+    }
+    return { success: false, error: 'Failed to update team' };
   }
 } 

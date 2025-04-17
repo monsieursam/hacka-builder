@@ -59,6 +59,7 @@ export function SubmissionDetailsModal({
   const { userId } = useAuth();
   const [userReview, setUserReview] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   
   const canReview = isJudge || isOrganizer;
   
@@ -69,7 +70,7 @@ export function SubmissionDetailsModal({
   
   useEffect(() => {
     const fetchReview = async () => {
-      if (!canReview || !userId) return;
+      if (!canReview || !userId || !isOpen) return;
       
       try {
         const review = await getReviewByUserAndSubmission({
@@ -85,7 +86,7 @@ export function SubmissionDetailsModal({
     };
     
     fetchReview();
-  }, [submission.id, userId, canReview]);
+  }, [submission.id, userId, canReview, isOpen]);
 
   const formattedDate = new Date(submission.submittedAt).toLocaleString('en-US', {
     year: 'numeric',
@@ -95,8 +96,27 @@ export function SubmissionDetailsModal({
     minute: '2-digit'
   });
 
+  // Function to handle review submission completion
+  const handleReviewComplete = async () => {
+    // Refresh review data
+    if (canReview && userId) {
+      try {
+        const review = await getReviewByUserAndSubmission({
+          userId,
+          submissionId: submission.id
+        });
+        setUserReview(review);
+        
+        // Close modal after successful review submission
+        setIsOpen(false);
+      } catch (error) {
+        console.error('Error refreshing review:', error);
+      }
+    }
+  };
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">View Details</Button>
       </DialogTrigger>
@@ -183,6 +203,7 @@ export function SubmissionDetailsModal({
                     userId={userId}
                     existingReview={userReview}
                     userRole={userRole}
+                    onReviewComplete={handleReviewComplete}
                   />
                 )}
               </div>

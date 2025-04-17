@@ -10,7 +10,7 @@ export function MainNav() {
   
   return (
     <header className="border-b">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="flex h-16 items-center justify-between w-full px-8">
         <div className="flex items-center gap-6">
           <Link href="/" className="font-bold text-xl">HackaBuilder</Link>
           
