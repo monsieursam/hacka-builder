@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
+import { getUserTeamForHackathon } from '@/actions/teams';
 import { 
   Trophy, 
   Inbox, 
@@ -48,9 +49,13 @@ export default async function DashboardLayout({
   const hackathon = await getHackathonByIdCached(hackathonId);
   const isOrganizer = userId === hackathon?.organizerId;
   
-  if (!hackathon) {
+  if (!hackathon || !userId) {
     return null;
   }
+  
+  // Check if the user is part of a team for this hackathon
+  const userTeam = await getUserTeamForHackathon(userId, hackathonId);
+  const isTeamMember = !!userTeam;
   
   return (
     <ClerkProvider>
@@ -62,7 +67,8 @@ export default async function DashboardLayout({
           <DashboardClient 
             hackathonId={hackathonId}
             hackathonName={hackathon.name}
-            isOrganizer={isOrganizer} 
+            isOrganizer={isOrganizer}
+            isTeamMember={isTeamMember}
             children={children} 
           />
         </body>

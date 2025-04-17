@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { SubmissionReview } from "./SubmissionReview";
 import { getReviewByUserAndSubmission } from "@/actions/reviews";
 import { useAuth } from "@clerk/nextjs";
+import { AnalyzeSubmissionButton } from "../submissions/_components/AnalyzeSubmissionButton";
 
 interface SubmissionDetailsModalProps {
   submission: {
@@ -197,14 +198,28 @@ export function SubmissionDetailsModal({
             {canReview && userId && (
               <div className="mt-6">
                 {!loading && (
-                  <SubmissionReview 
-                    submissionId={submission.id}
-                    hackathonId={hackathonId}
-                    userId={userId}
-                    existingReview={userReview}
-                    userRole={userRole}
-                    onReviewComplete={handleReviewComplete}
-                  />
+                  <>
+                    <SubmissionReview 
+                      submissionId={submission.id}
+                      hackathonId={hackathonId}
+                      userId={userId}
+                      existingReview={userReview}
+                      userRole={userRole}
+                      onReviewComplete={handleReviewComplete}
+                    />
+                    
+                    {/* AI Analysis Button - Only for judges */}
+                    {isJudge && (
+                      <div className="mt-4">
+                        <AnalyzeSubmissionButton
+                          submissionId={submission.id}
+                          projectName={submission.projectName}
+                          description={submission.description}
+                          repositoryUrl={submission.repoUrl}
+                        />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

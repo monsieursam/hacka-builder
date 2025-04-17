@@ -316,4 +316,28 @@ export async function declineJudgeInvitation(judgeId: string) {
     console.error('Error declining judge invitation:', error);
     return { success: false, error: 'Failed to decline invitation' };
   }
+}
+
+/**
+ * Check if a user is a judge for a specific hackathon
+ */
+export async function getJudgeForUser(userId: string, hackathonId: string) {
+  try {
+    if (!userId || !hackathonId) {
+      return null;
+    }
+    
+    const judge = await db.query.judges.findFirst({
+      where: and(
+        eq(judges.userId, userId),
+        eq(judges.hackathonId, hackathonId),
+        eq(judges.isAccepted, true)
+      )
+    });
+    
+    return judge;
+  } catch (error) {
+    console.error('Error checking judge status:', error);
+    return null;
+  }
 } 

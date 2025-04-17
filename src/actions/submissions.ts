@@ -2,12 +2,18 @@
 
 import { db } from '@/db';
 import { submissions } from '@/db/schema';
-import { auth } from '@clerk/nextjs/server';
+import { auth, getAuth } from '@clerk/nextjs/server';
 import { getUserTeamForHackathon } from './teams';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { eq } from 'drizzle-orm';
 import { teamMembers } from '@/db/schema';
+import { experimental_createMCPClient, generateText } from 'ai';
+import { Experimental_StdioMCPTransport } from 'ai/mcp-stdio';
+
+import { openai } from '@ai-sdk/openai';
+import { extractGitHubRepoInfo } from './github';
+import { getJudgeForUser } from './judges';
 
 export type SubmissionFormData = {
   projectName: string;
@@ -173,5 +179,139 @@ export async function deleteSubmission(submissionId: string) {
   } catch (error) {
     console.error('Failed to delete submission:', error);
     throw new Error('Failed to delete submission. ' + (error instanceof Error ? error.message : ''));
+  }
+}
+
+/**
+ * Get a submission by ID
+ */
+export async function getSubmissionById(submissionId: string) {
+  try {
+    const submission = await db.query.submissions.findFirst({
+      where: eq(submissions.id, submissionId),
+      with: {
+        team: true,
+        track: true
+      }
+    });
+    
+    return submission;
+  } catch (error) {
+    console.error('Failed to get submission:', error);
+    return null;
+  }
+}
+
+/**
+ * Analyze a submission using AI
+ */
+export async function analyzeSubmission(data: {
+  submissionId: string;
+  projectName: string;
+  description: string;
+  repositoryUrl: string;
+  prompt: string;
+}) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Extract data from the request
+    const { submissionId, projectName, description, repositoryUrl, prompt } = data;
+    
+    if (!submissionId) {
+      throw new Error('Missing submission ID');
+    }
+    
+    // Verify the submission exists
+    const submission = await getSubmissionById(submissionId);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    
+    // Check if the user is a judge for this hackathon
+    const hackathonId = submission.team.hackathonId;
+    const isJudge = await getJudgeForUser(userId, hackathonId);
+    
+    if (!isJudge) {
+      throw new Error('Unauthorized - Only judges can analyze submissions');
+    }
+    
+    // Set up MCP client for repository analysis if a repo URL is provided
+    let mcpClient = null;
+    let tools = {};
+    
+    if (repositoryUrl) {
+      const repoInfo = await extractGitHubRepoInfo(repositoryUrl);
+      
+      if (repoInfo) {
+        try {
+          console.log(`Setting up GitHub MCP client for ${repoInfo.owner}/${repoInfo.repo}`);
+          
+          // Initialize MCP client with GitHub's official MCP server
+          const transport = new Experimental_StdioMCPTransport({
+            command: '/Users/samuelmamane/Documents/github-mcp-server/github-mcp-server',
+            args: ['stdio'],
+            env: {
+              GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN || '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',
+            },
+            cwd: process.cwd(), // or the directory where your server is
+          });
+        
+          const mcpClient = await experimental_createMCPClient({ transport });
+          
+          // Get tools from the MCP client
+          tools = await mcpClient.tools();
+          
+          // Log available tools for debugging
+          console.log('Available tools:', Object.keys(tools));
+          console.log('Successfully connected to GitHub MCP server');
+        } catch (error) {
+          console.error('Failed to set up GitHub MCP client:', error);
+          // Continue without MCP if there's an error - we'll fall back to standard analysis
+        }
+      }
+    }
+    
+    // Create the default prompt if not provided
+    const defaultPrompt = `
+Please analyze this hackathon submission:
+${repositoryUrl ? `Repository URL: ${repositoryUrl}` : ''}
+
+Provide detailed feedback on:
+1. Introduction about the project
+2. Technical implementation and code quality
+3. Creativity and innovation
+4. Potential impact and usefulness
+5. Overall strengths and areas for improvement
+6. Suggested score (1-100) with justification
+`;
+
+    // Create the prompt with details and context
+    const enhancedPrompt = prompt || defaultPrompt;
+    
+    // Use AI SDK to analyze the submission
+    const result = await generateText({
+      model: openai('gpt-4-turbo'),
+      messages: [
+        { role: 'system', content: 'You are an expert judge for hackathon projects. Provide detailed, constructive feedback.' },
+        { role: 'user', content: enhancedPrompt }
+      ],
+      tools,
+    });
+    
+    // Ensure we close the MCP client after analysis is complete
+    if (mcpClient) {
+      await mcpClient.close();
+    }
+    
+    // Return the analysis result as JSON
+    return result;
+  } catch (error) {
+    console.error('Failed to analyze submission:', error);
+    throw new Error('Failed to analyze submission. ' + (error instanceof Error ? error.message : ''));
   }
 } 

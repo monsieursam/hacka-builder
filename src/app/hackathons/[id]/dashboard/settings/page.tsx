@@ -3,10 +3,10 @@ import { auth } from '@clerk/nextjs/server';
 import { getHackathonByIdCached } from '@/actions/hackathon';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CreateHackathonForm } from '@/app/hackathons/_components/CreateHackathonForm';
 import { TracksManager } from './_components/TracksManager';
 import { PartnersManager } from './_components/PartnersManager';
 import { AdvancedSettings } from './_components/AdvancedSettings';
+import { CreateHackathonForm } from '@/app/hackathons/_components/CreateHackathonForm';
 
 export default async function HackathonSettingsPage({ 
   params 

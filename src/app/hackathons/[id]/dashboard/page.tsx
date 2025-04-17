@@ -15,6 +15,7 @@ import {
   BreadcrumbSeparator 
 } from '@/components/ui/breadcrumb';
 import { DeleteHackathonButton } from '@/components/hackathons/DeleteHackathonButton';
+import { CreateTeamModal } from './_components/CreateTeamModal';
 
 // Format date for display
 const formatDate = (date: Date) => {
@@ -186,9 +187,7 @@ export default async function HackathonDashboard({
             <div className="mb-8 p-6 border border-purple-200 bg-purple-50 rounded-lg">
               <h3 className="text-xl font-bold mb-3">Create Your Team</h3>
               <p className="mb-4">Start by creating your team to participate in this hackathon.</p>
-              <Button asChild>
-                <Link href={`/hackathons/${hackathon.id}/teams/new`}>Create Team</Link>
-              </Button>
+              <CreateTeamModal hackathonId={hackathonId} />
             </div>
           )}
           

@@ -37,6 +37,7 @@ interface DashboardClientProps {
   hackathonId: string;
   hackathonName: string;
   isOrganizer: boolean;
+  isTeamMember?: boolean;
   children: React.ReactNode;
 }
 
@@ -44,6 +45,7 @@ export default function DashboardClient({
   hackathonId,
   hackathonName,
   isOrganizer,
+  isTeamMember = false,
   children 
 }: DashboardClientProps) {
   const pathname = usePathname();
@@ -70,8 +72,6 @@ export default function DashboardClient({
       return 'My Team';
     } else if (pathname.includes('/resources')) {
       return 'Resources';
-    } else if (pathname.includes('/announcements')) {
-      return 'Announcements';
     } else if (pathname.includes('/leaderboard')) {
       return 'Leaderboard';
     } else if (pathname.includes('/judges')) {
@@ -117,18 +117,21 @@ export default function DashboardClient({
                 <Separator className="mb-2" />
               </div>
               
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('my-team')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/my-team`}>
-                    <Users className="mr-2 h-5 w-5" />
-                    My Team
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {/* Only show My Team link if user is a team member and not an organizer */}
+              {!isOrganizer && isTeamMember && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive('my-team')}
+                    size="lg"
+                  >
+                    <Link href={`/hackathons/${hackathonId}/dashboard/my-team`}>
+                      <Users className="mr-2 h-5 w-5" />
+                      My Team
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               
               {/* Hackathon Info Section */}
               <div className="mt-4 mb-2">
@@ -216,18 +219,6 @@ export default function DashboardClient({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive('announcements')}
-                  size="lg"
-                >
-                  <Link href={`/hackathons/${hackathonId}/dashboard/announcements`}>
-                    <Bell className="mr-2 h-5 w-5" />
-                    Announcements
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           

@@ -1348,4 +1348,87 @@ export async function updateTeam(formData: FormData) {
     }
     return { success: false, error: 'Failed to update team' };
   }
+}
+
+/**
+ * Delete a team (team owner only)
+ */
+export async function deleteTeam(teamId: string, hackathonId: string) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Verify the team exists
+    const team = await getTeamById(teamId);
+    if (!team) {
+      return { success: false, error: 'Team not found' };
+    }
+
+    // Verify the team belongs to this hackathon
+    if (team.hackathonId !== hackathonId) {
+      return { success: false, error: 'Team does not belong to this hackathon' };
+    }
+
+    // Check if the user is the team owner
+    const teamMember = await db.query.teamMembers.findFirst({
+      where: and(
+        eq(teamMembers.teamId, teamId),
+        eq(teamMembers.userId, userId),
+        eq(teamMembers.role, 'owner')
+      )
+    });
+
+    if (!teamMember) {
+      return { success: false, error: 'Only the team owner can delete the team' };
+    }
+
+    // Begin a transaction to delete the team and related records
+    await db.transaction(async (tx) => {
+      // Get all submissions for this team
+      const teamSubmissions = await tx.select({ id: submissions.id })
+        .from(submissions)
+        .where(eq(submissions.teamId, teamId));
+      
+      const submissionIds = teamSubmissions.map(s => s.id);
+      
+      // If there are submissions, delete their reviews first
+      if (submissionIds.length > 0) {
+        // Delete reviews associated with the team's submissions
+        await tx.execute(sql`DELETE FROM reviews WHERE submission_id IN (${sql.join(submissionIds)})`);
+      }
+
+      // Delete all invitations for this team
+      await tx.delete(teamInvitations)
+        .where(eq(teamInvitations.teamId, teamId));
+        
+      // Delete all join requests for this team
+      await tx.delete(teamJoinRequests)
+        .where(eq(teamJoinRequests.teamId, teamId));
+
+      // Now it's safe to delete submissions
+      await tx.delete(submissions)
+        .where(eq(submissions.teamId, teamId));
+
+      // Delete team members
+      await tx.delete(teamMembers)
+        .where(eq(teamMembers.teamId, teamId));
+
+      // Delete the team
+      await tx.delete(teams)
+        .where(eq(teams.id, teamId));
+    });
+
+    // Revalidate relevant paths
+    revalidatePath(`/hackathons/${hackathonId}`);
+    revalidatePath(`/hackathons/${hackathonId}/dashboard`);
+    revalidatePath(`/hackathons/${hackathonId}/teams`);
+
+    return { success: true, hackathonId };
+  } catch (error) {
+    console.error('Error deleting team:', error);
+    return { success: false, error: 'Failed to delete team' };
+  }
 } 
