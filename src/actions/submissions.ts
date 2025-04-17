@@ -256,7 +256,7 @@ export async function analyzeSubmission(data: {
             command: '/Users/samuelmamane/Documents/github-mcp-server/github-mcp-server',
             args: ['stdio'],
             env: {
-              GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN || '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',
+              GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN || '',
             },
             cwd: process.cwd(), // or the directory where your server is
           });
