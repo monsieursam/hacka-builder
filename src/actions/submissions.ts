@@ -201,3 +201,123 @@ export async function getSubmissionById(submissionId: string) {
     return null;
   }
 }
+
+/**
+ * Analyze a submission using AI
+ */
+export async function analyzeSubmission(data: {
+  submissionId: string;
+  projectName: string;
+  description: string;
+  repositoryUrl: string;
+  prompt: string;
+}) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Extract data from the request
+    const { submissionId, projectName, description, repositoryUrl, prompt } = data;
+    
+    if (!submissionId) {
+      throw new Error('Missing submission ID');
+    }
+    
+    // Verify the submission exists
+    const submission = await getSubmissionById(submissionId);
+    if (!submission) {
+      throw new Error('Submission not found');
+    }
+    
+    // Check if the user is a judge for this hackathon
+    const hackathonId = submission.team.hackathonId;
+    const isJudge = await getJudgeForUser(userId, hackathonId);
+    
+    if (!isJudge) {
+      throw new Error('Unauthorized - Only judges can analyze submissions');
+    }
+    
+    // Set up MCP client for repository analysis if a repo URL is provided
+    type MCPClient = ReturnType<typeof experimental_createMCPClient> extends Promise<infer T> ? T : never;
+    let mcpClient: MCPClient | null = null;
+    let tools = {};
+    
+    if (repositoryUrl) {
+      const repoInfo = await extractGitHubRepoInfo(repositoryUrl);
+      
+      if (repoInfo) {
+        try {
+          console.log(`Setting up GitHub MCP client for ${repoInfo.owner}/${repoInfo.repo}`);
+          
+          const token = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
+          if (!token) {
+            console.warn('GitHub Personal Access Token not found in environment variables');
+          }
+          
+          // Initialize MCP client with GitHub's official MCP server
+          const transport = new Experimental_StdioMCPTransport({
+            command: '/Users/samuelmamane/Documents/github-mcp-server/github-mcp-server',
+            args: ['stdio'],
+            env: {
+              GITHUB_PERSONAL_ACCESS_TOKEN: token || '',
+            },
+            cwd: process.cwd(), // or the directory where your server is
+          });
+        
+          mcpClient = await experimental_createMCPClient({ transport });
+          
+          // Get tools from the MCP client
+          tools = await mcpClient.tools();
+          
+          // Log available tools for debugging
+          console.log('Available tools:', Object.keys(tools));
+          console.log('Successfully connected to GitHub MCP server');
+        } catch (error) {
+          console.error('Failed to set up GitHub MCP client:', error);
+          // Continue without MCP if there's an error - we'll fall back to standard analysis
+        }
+      }
+    }
+    
+    // Create the default prompt if not provided
+    const defaultPrompt = `
+Please analyze this hackathon submission:
+${repositoryUrl ? `Repository URL: ${repositoryUrl}` : ''}
+
+Provide detailed feedback on:
+1. Introduction about the project
+2. Technical implementation and code quality
+3. Creativity and innovation
+4. Potential impact and usefulness
+5. Overall strengths and areas for improvement
+6. Suggested score (1-100) with justification
+`;
+
+    // Create the prompt with details and context
+    const enhancedPrompt = prompt || defaultPrompt;
+    
+    // Use AI SDK to analyze the submission
+    const result = await generateText({
+      model: openai('gpt-4-turbo'),
+      messages: [
+        { role: 'system', content: 'You are an expert judge for hackathon projects. Provide detailed, constructive feedback.' },
+        { role: 'user', content: enhancedPrompt }
+      ],
+      tools,
+    });
+    
+    // Ensure we close the MCP client after analysis is complete
+    if (mcpClient) {
+      await mcpClient.close();
+    }
+    
+    // Return the analysis result as JSON
+    return result;
+  } catch (error) {
+    console.error('Failed to analyze submission:', error);
+    throw new Error('Failed to analyze submission. ' + (error instanceof Error ? error.message : ''));
+  }
+}
