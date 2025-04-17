@@ -48,15 +48,6 @@ export async function POST(req: NextRequest) {
         try {
           console.log(`Setting up GitHub MCP client for ${repoInfo.owner}/${repoInfo.repo}`);
           
-          // Initialize MCP client with GitHub's MCP server
-        //   const transport = new Experimental_StdioMCPTransport({
-        //     command: process.env.GITHUB_MCP_SERVER_PATH || '/Users/samuelmamane/Documents/github-mcp-server/github-mcp-server',
-        //     args: ['stdio'],
-        //     env: {
-        //       GITHUB_PERSONAL_ACCESS_TOKEN: process.env.GITHUB_PERSONAL_ACCESS_TOKEN,
-        //     },
-        //     cwd: process.cwd(),
-        //   });
         
           mcpClient = await experimental_createMCPClient({ transport:
             {
